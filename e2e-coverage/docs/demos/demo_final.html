@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>E2E Coverage — Microsoft Edge (macOS)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6f8; color: #333; }
+  .header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 18px 30px; }
+  .header h1 { font-size: 18px; }
+  .header .sub { font-size: 12px; color: #999; margin-top: 2px; }
+  .main { max-width: 1060px; margin: 0 auto; padding: 20px; }
+  .view { display: none; } .view.active { display: block; }
+
+  /* ── Overview ── */
+  .summary-bar { display: flex; gap: 14px; margin-bottom: 22px; }
+  .summary-card { flex: 1; background: #fff; border-radius: 10px; padding: 14px; border: 1px solid #e5e7eb; text-align: center; }
+  .summary-card .v { font-size: 26px; font-weight: 700; }
+  .summary-card .l { font-size: 11px; color: #888; margin-top: 2px; }
+  .sc-blue .v { color: #2563eb; } .sc-green .v { color: #16a34a; } .sc-red .v { color: #dc2626; } .sc-gray .v { color: #9ca3af; }
+
+  .overview-graph-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 18px; overflow-x: auto; }
+  .overview-graph-card .graph-title { font-size: 13px; font-weight: 600; color: #666; margin-bottom: 10px; }
+
+  /* ── Detail ── */
+  .breadcrumb { font-size: 13px; color: #888; margin-bottom: 14px; }
+  .breadcrumb a { color: #2563eb; text-decoration: none; cursor: pointer; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .detail-top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .detail-top .icon { font-size: 26px; }
+  .detail-top h2 { font-size: 18px; flex: 1; }
+  .detail-top .pct { font-size: 18px; font-weight: 700; }
+  .detail-stats { display: flex; gap: 10px; margin-bottom: 18px; }
+  .detail-stat { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 14px; font-size: 13px; }
+  .detail-stat b { display: block; font-size: 18px; margin-bottom: 1px; }
+
+  /* ── Graph Card ── */
+  .graph-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 18px; overflow-x: auto; }
+  .graph-title { font-size: 13px; font-weight: 600; color: #666; margin-bottom: 10px; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: #888; margin-bottom: 12px; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .legend .line-s { width: 18px; height: 2px; display: inline-block; border-radius: 1px; }
+
+  svg.graph text { user-select: none; }
+  svg.graph .ng { cursor: pointer; }
+  svg.graph .nr { transition: filter .2s, opacity .2s; }
+  svg.graph .nt { transition: opacity .2s; }
+  svg.graph .ep { fill: none; transition: stroke .2s, stroke-width .2s, opacity .2s; }
+  svg.graph .elb, svg.graph .elt { transition: opacity .2s; }
+  body.hl .ng.dim .nr { opacity: .15; }
+  body.hl .ng.dim .nt { opacity: .15; }
+  body.hl .ep.dim { opacity: .08; }
+  body.hl .elb.dim { opacity: .08; }
+  body.hl .elt.dim { opacity: .08; }
+  body.hl .ep.lit { stroke: #2563eb !important; stroke-width: 2.5 !important; }
+  body.hl .ng.lit .nr { filter: drop-shadow(0 0 8px rgba(37,99,235,.45)); stroke: #2563eb !important; stroke-width: 2.5 !important; }
+
+  /* ── Flow Sections ── */
+  .flow-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .flow-sec-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .flow-sec-title .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .ftable { width: 100%; border-collapse: collapse; }
+  .ftable th { text-align: left; font-size: 11px; font-weight: 600; color: #999; padding: 5px 10px; border-bottom: 1px solid #f0f0f0; }
+  .ftable td { padding: 7px 10px; font-size: 13px; border-bottom: 1px solid #f8f8f8; }
+  .ftable tbody tr { cursor: pointer; transition: background .12s; }
+  .ftable tbody tr:hover { background: #f0f7ff; }
+  .ftable tbody tr.active { background: #eff6ff; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .badge.pass { background: #dcfce7; color: #16a34a; }
+  .badge.fail { background: #fef2f2; color: #dc2626; }
+  .badge.skip { background: #f3f4f6; color: #9ca3af; }
+  .fp { font-size: 12px; color: #888; }
+  .fp .sf { color: #dc2626; font-weight: 600; }
+
+  .tooltip { position: fixed; background: #1e293b; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; pointer-events: none; display: none; z-index: 100; max-width: 260px; line-height: 1.5; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>E2E Coverage Report — Microsoft Edge (macOS)</h1>
+  <div class="sub">状态图 + Flow 覆盖率 · 交互式报告 · 点击模块下钻查看详情</div>
+</div>
+
+<div class="main">
+  <div id="v-overview" class="view active"></div>
+  <div id="v-detail" class="view"></div>
+</div>
+<div class="tooltip" id="tip"></div>
+
+<script>
+const C = { pass:'#16a34a', fail:'#dc2626', skip:'#9ca3af', uncov:'#d1d5db', hl:'#2563eb' };
+const NS = 'http://www.w3.org/2000/svg';
+const tip = document.getElementById('tip');
+const FTYPES = [
+  { key:'happy', label:'Happy Path', color:C.pass, icon:'✅' },
+  { key:'error', label:'Error Handling', color:C.fail, icon:'⚠️' },
+  { key:'boundary', label:'Boundary / Skip', color:C.skip, icon:'⏭️' },
+];
+
+// ════════════════════════════════════════════
+// DATA — 6 Modules
+// ════════════════════════════════════════════
+const MODULES = [
+{
+  id:'nav', name:'Navigation', icon:'🧭',
+  nodes:[
+    {id:'startup',x:100,y:55,w:115,h:36,status:'pass',label:'🚀 Startup'},
+    {id:'newtab',x:340,y:55,w:115,h:36,status:'pass',label:'📄 New Tab'},
+    {id:'addrbar',x:580,y:55,w:130,h:36,status:'pass',label:'🔗 Address Bar'},
+    {id:'home',x:100,y:170,w:120,h:36,status:'uncov',label:'🏠 Home Page'},
+    {id:'pageA',x:340,y:170,w:130,h:36,status:'pass',label:'🌐 Page Loaded'},
+    {id:'errpage',x:580,y:170,w:120,h:36,status:'pass',label:'⚠️ Error Page'},
+    {id:'voice',x:100,y:285,w:130,h:36,status:'skip',label:'🎤 Voice Search'},
+    {id:'pageB',x:340,y:285,w:115,h:36,status:'pass',label:'🌐 Page B'},
+    {id:'retry',x:580,y:285,w:105,h:36,status:'fail',label:'🔄 Retry'},
+    {id:'refresh',x:340,y:390,w:120,h:36,status:'pass',label:'🔄 Refreshed'},
+  ],
+  edges:[
+    {from:'startup',to:'newtab',label:'launch',status:'pass'},
+    {from:'newtab',to:'addrbar',label:'click bar',status:'pass'},
+    {from:'addrbar',to:'pageA',label:'enter URL',status:'pass'},
+    {from:'addrbar',to:'errpage',label:'invalid URL',status:'pass'},
+    {from:'errpage',to:'retry',label:'click retry',status:'fail'},
+    {from:'pageA',to:'pageB',label:'click link',status:'pass'},
+    {from:'pageB',to:'pageA',label:'back ←',status:'pass'},
+    {from:'pageA',to:'refresh',label:'Cmd+R',status:'pass'},
+    {from:'refresh',to:'pageA',label:'reloaded',status:'pass'},
+    {from:'newtab',to:'home',label:'click Home',status:'uncov'},
+    {from:'addrbar',to:'voice',label:'click 🎤',status:'skip'},
+  ],
+  flows:[
+    {id:'n1',name:'F1: 基础URL导航',type:'happy',status:'pass',path:['startup','newtab','addrbar','pageA'],edges:[['startup','newtab'],['newtab','addrbar'],['addrbar','pageA']],desc:'启动 → 新标签 → 地址栏 → 页面加载'},
+    {id:'n2',name:'F2: 前进后退',type:'happy',status:'pass',path:['pageA','pageB','pageA'],edges:[['pageA','pageB'],['pageB','pageA']],desc:'页面A → 链接B → 后退A'},
+    {id:'n3',name:'F3: 页面刷新',type:'happy',status:'pass',path:['pageA','refresh','pageA'],edges:[['pageA','refresh'],['refresh','pageA']],desc:'页面 → Cmd+R → 刷新完成'},
+    {id:'n4',name:'F4: 无效URL错误处理',type:'error',status:'fail',failAt:'retry',path:['newtab','addrbar','errpage','retry'],edges:[['newtab','addrbar'],['addrbar','errpage'],['errpage','retry']],desc:'地址栏 → 无效URL → 错误页 → <span class="sf">重试(✗)</span>'},
+    {id:'n5',name:'F5: 语音搜索',type:'boundary',status:'skip',path:['addrbar','voice'],edges:[['addrbar','voice']],desc:'地址栏 → 🎤 (需麦克风, 跳过)'},
+  ],
+  svgH: 440,
+},
+{
+  id:'search', name:'Search', icon:'🔍',
+  nodes:[
+    {id:'addr',x:100,y:55,w:130,h:36,status:'pass',label:'🔗 Address Bar'},
+    {id:'suggest',x:340,y:55,w:125,h:36,status:'pass',label:'💡 Suggestions'},
+    {id:'bing',x:580,y:55,w:120,h:36,status:'pass',label:'🔍 Bing Results'},
+    {id:'result',x:200,y:170,w:120,h:36,status:'pass',label:'📄 Result Page'},
+    {id:'images',x:460,y:170,w:130,h:36,status:'pass',label:'🖼️ Image Search'},
+    {id:'news',x:680,y:170,w:120,h:36,status:'uncov',label:'📰 News Search'},
+    {id:'voiceS',x:100,y:170,w:130,h:36,status:'skip',label:'🎤 Voice Input'},
+  ],
+  edges:[
+    {from:'addr',to:'suggest',label:'type keyword',status:'pass'},
+    {from:'suggest',to:'bing',label:'press Enter',status:'pass'},
+    {from:'bing',to:'result',label:'click result',status:'pass'},
+    {from:'bing',to:'images',label:'click Images',status:'pass'},
+    {from:'bing',to:'news',label:'click News',status:'uncov'},
+    {from:'addr',to:'voiceS',label:'click 🎤',status:'skip'},
+  ],
+  flows:[
+    {id:'s1',name:'F1: 关键词搜索',type:'happy',status:'pass',path:['addr','suggest','bing','result'],edges:[['addr','suggest'],['suggest','bing'],['bing','result']],desc:'地址栏 → 建议 → 回车 → 结果页'},
+    {id:'s2',name:'F2: 图片搜索',type:'happy',status:'pass',path:['bing','images'],edges:[['bing','images']],desc:'Bing结果 → Images标签 → 图片列表'},
+    {id:'s3',name:'F3: 语音搜索',type:'boundary',status:'skip',path:['addr','voiceS'],edges:[['addr','voiceS']],desc:'地址栏 → 🎤 (需麦克风, 跳过)'},
+  ],
+  svgH: 240,
+},
+{
+  id:'tabs', name:'Tab Management', icon:'📑',
+  nodes:[
+    {id:'tbar',x:340,y:55,w:110,h:36,status:'pass',label:'📑 Tab Bar'},
+    {id:'tnew',x:120,y:170,w:120,h:36,status:'pass',label:'➕ New Tab'},
+    {id:'tctx',x:560,y:170,w:135,h:36,status:'pass',label:'📋 Context Menu'},
+    {id:'tpin',x:400,y:285,w:110,h:36,status:'pass',label:'📌 Pin Tab'},
+    {id:'tgrp',x:640,y:285,w:115,h:36,status:'fail',label:'📋 Tab Group'},
+    {id:'twin',x:120,y:285,w:120,h:36,status:'skip',label:'🪟 New Window'},
+  ],
+  edges:[
+    {from:'tbar',to:'tnew',label:'Cmd+T',status:'pass'},
+    {from:'tnew',to:'tbar',label:'Cmd+W close',status:'pass'},
+    {from:'tbar',to:'tctx',label:'right click',status:'pass'},
+    {from:'tctx',to:'tpin',label:'Pin Tab',status:'pass'},
+    {from:'tctx',to:'tgrp',label:'Add to Group',status:'fail'},
+    {from:'tbar',to:'twin',label:'drag out',status:'skip'},
+  ],
+  flows:[
+    {id:'t1',name:'F1: 新建关闭标签',type:'happy',status:'pass',path:['tbar','tnew','tbar'],edges:[['tbar','tnew'],['tnew','tbar']],desc:'Cmd+T → 新标签 → Cmd+W → 回到之前'},
+    {id:'t2',name:'F2: 标签固定',type:'happy',status:'pass',path:['tbar','tctx','tpin'],edges:[['tbar','tctx'],['tctx','tpin']],desc:'右键 → Pin Tab → 标签固定'},
+    {id:'t3',name:'F3: 标签分组',type:'error',status:'fail',failAt:'tgrp',path:['tbar','tctx','tgrp'],edges:[['tbar','tctx'],['tctx','tgrp']],desc:'右键 → Add to Group → <span class="sf">分组验证(✗)</span>'},
+    {id:'t4',name:'F4: 拖到新窗口',type:'boundary',status:'skip',path:['tbar','twin'],edges:[['tbar','twin']],desc:'拖拽标签 (自动化不稳定, 跳过)'},
+  ],
+  svgH: 340,
+},
+{
+  id:'bm', name:'Bookmarks', icon:'⭐',
+  nodes:[
+    {id:'bpage',x:340,y:55,w:130,h:36,status:'pass',label:'🌐 Page Loaded'},
+    {id:'bstar',x:140,y:170,w:115,h:36,status:'pass',label:'⭐ Click Star'},
+    {id:'bedit',x:340,y:285,w:130,h:36,status:'pass',label:'📝 Edit Bookmark'},
+    {id:'bmgr',x:560,y:170,w:125,h:36,status:'pass',label:'📂 BM Manager'},
+    {id:'bfold',x:420,y:170,w:125,h:36,status:'pass',label:'📁 New Folder'},
+    {id:'bdrag',x:680,y:285,w:130,h:36,status:'fail',label:'🔀 Drag Bookmark'},
+  ],
+  edges:[
+    {from:'bpage',to:'bstar',label:'click ⭐',status:'pass'},
+    {from:'bstar',to:'bedit',label:'edit',status:'pass'},
+    {from:'bedit',to:'bpage',label:'Done',status:'pass'},
+    {from:'bpage',to:'bmgr',label:'Cmd+Shift+O',status:'pass'},
+    {from:'bmgr',to:'bfold',label:'new folder',status:'pass'},
+    {from:'bfold',to:'bdrag',label:'drag into',status:'fail'},
+  ],
+  flows:[
+    {id:'b1',name:'F1: 添加书签',type:'happy',status:'pass',path:['bpage','bstar','bedit','bpage'],edges:[['bpage','bstar'],['bstar','bedit'],['bedit','bpage']],desc:'页面 → ⭐ → 编辑 → Done'},
+    {id:'b2',name:'F2: 书签管理器',type:'error',status:'fail',failAt:'bdrag',path:['bpage','bmgr','bfold','bdrag'],edges:[['bpage','bmgr'],['bmgr','bfold'],['bfold','bdrag']],desc:'管理器 → 建文件夹 → <span class="sf">拖拽(✗)</span>'},
+  ],
+  svgH: 340,
+},
+{
+  id:'dl', name:'Downloads', icon:'⬇️',
+  nodes:[
+    {id:'dpage',x:100,y:55,w:110,h:36,status:'pass',label:'🌐 Page'},
+    {id:'ddl',x:300,y:55,w:120,h:36,status:'pass',label:'⬇️ Download'},
+    {id:'dprog',x:500,y:55,w:120,h:36,status:'pass',label:'📊 Progress'},
+    {id:'ddone',x:300,y:170,w:120,h:36,status:'pass',label:'✅ Complete'},
+    {id:'dopen',x:500,y:170,w:130,h:36,status:'pass',label:'📂 Open File'},
+    {id:'dsmart',x:100,y:170,w:130,h:36,status:'skip',label:'🛡️ SmartScreen'},
+  ],
+  edges:[
+    {from:'dpage',to:'ddl',label:'click link',status:'pass'},
+    {from:'ddl',to:'dprog',label:'downloading',status:'pass'},
+    {from:'dprog',to:'ddone',label:'done',status:'pass'},
+    {from:'ddone',to:'dopen',label:'open',status:'pass'},
+    {from:'ddl',to:'dsmart',label:'blocked',status:'skip'},
+  ],
+  flows:[
+    {id:'d1',name:'F1: 文件下载',type:'happy',status:'pass',path:['dpage','ddl','dprog','ddone','dopen'],edges:[['dpage','ddl'],['ddl','dprog'],['dprog','ddone'],['ddone','dopen']],desc:'点击链接 → 下载 → 完成 → 打开'},
+    {id:'d2',name:'F2: SmartScreen拦截',type:'boundary',status:'skip',path:['ddl','dsmart'],edges:[['ddl','dsmart']],desc:'下载可疑文件 → SmartScreen (CI跳过)'},
+  ],
+  svgH: 240,
+},
+{
+  id:'settings', name:'Settings', icon:'⚙️',
+  nodes:[
+    {id:'sset',x:340,y:55,w:110,h:36,status:'pass',label:'⚙️ Settings'},
+    {id:'sapp',x:120,y:170,w:125,h:36,status:'pass',label:'🎨 Appearance'},
+    {id:'spriv',x:340,y:170,w:110,h:36,status:'pass',label:'🔒 Privacy'},
+    {id:'sprof',x:560,y:170,w:110,h:36,status:'pass',label:'👤 Profiles'},
+    {id:'sdark',x:120,y:285,w:120,h:36,status:'pass',label:'🌙 Dark Mode'},
+    {id:'sclear',x:260,y:285,w:120,h:36,status:'pass',label:'🧹 Clear Data'},
+    {id:'sverify',x:400,y:285,w:125,h:36,status:'fail',label:'✅ Verify Clear'},
+    {id:'spass',x:560,y:285,w:115,h:36,status:'pass',label:'🔑 Passwords'},
+    {id:'sdns',x:480,y:170,w:120,h:36,status:'skip',label:'🔏 Secure DNS'},
+  ],
+  edges:[
+    {from:'sset',to:'sapp',label:'Appearance',status:'pass'},
+    {from:'sapp',to:'sdark',label:'toggle',status:'pass'},
+    {from:'sset',to:'spriv',label:'Privacy',status:'pass'},
+    {from:'spriv',to:'sclear',label:'Clear Data',status:'pass'},
+    {from:'sclear',to:'sverify',label:'Clear Now',status:'fail'},
+    {from:'sset',to:'sprof',label:'Profiles',status:'pass'},
+    {from:'sprof',to:'spass',label:'Passwords',status:'pass'},
+    {from:'spriv',to:'sdns',label:'Secure DNS',status:'skip'},
+  ],
+  flows:[
+    {id:'st1',name:'F1: 深色模式',type:'happy',status:'pass',path:['sset','sapp','sdark'],edges:[['sset','sapp'],['sapp','sdark']],desc:'Settings → Appearance → Dark Mode'},
+    {id:'st2',name:'F2: 密码管理器',type:'happy',status:'pass',path:['sset','sprof','spass'],edges:[['sset','sprof'],['sprof','spass']],desc:'Settings → Profiles → Passwords'},
+    {id:'st3',name:'F3: 清除浏览数据',type:'error',status:'fail',failAt:'sverify',path:['sset','spriv','sclear','sverify'],edges:[['sset','spriv'],['spriv','sclear'],['sclear','sverify']],desc:'Privacy → Clear → <span class="sf">验证(✗ Cookie未归零)</span>'},
+    {id:'st4',name:'F4: Secure DNS',type:'boundary',status:'skip',path:['spriv','sdns'],edges:[['spriv','sdns']],desc:'Privacy → Secure DNS (需管理员权限)'},
+  ],
+  svgH: 340,
+},
+];
+
+// ════════════════════════════════════════════
+// Overview — Module Relationship Graph
+// ════════════════════════════════════════════
+const MOD_GRAPH = {
+  nodes: [
+    {id:'nav',    x:420, y:50,  w:145, h:52},
+    {id:'search', x:180, y:165, w:120, h:52},
+    {id:'tabs',   x:660, y:165, w:160, h:52},
+    {id:'bm',     x:120, y:295, w:135, h:52},
+    {id:'dl',     x:420, y:295, w:135, h:52},
+    {id:'settings',x:680,y:295, w:120, h:52},
+  ],
+  edges: [
+    {from:'nav',to:'search',label:'地址栏搜索'},
+    {from:'nav',to:'tabs',label:'多标签操作'},
+    {from:'nav',to:'dl',label:'触发下载'},
+    {from:'search',to:'bm',label:'收藏搜索结果'},
+    {from:'tabs',to:'settings',label:'标签设置'},
+    {from:'nav',to:'bm',label:'收藏页面'},
+    {from:'nav',to:'settings',label:'edge://settings'},
+  ],
+};
+
+function pctColor(p) { return p >= 75 ? C.pass : p >= 50 ? '#ea580c' : C.fail; }
+
+function renderOverview() {
+  let totalP=0,totalF=0,totalS=0;
+  MODULES.forEach(m => m.flows.forEach(fl => { if(fl.status==='pass')totalP++; else if(fl.status==='fail')totalF++; else totalS++; }));
+  const totalAll = totalP+totalF+totalS, totalPct = Math.round(totalP/totalAll*100);
+
+  let h = `
+  <div class="summary-bar">
+    <div class="summary-card sc-blue"><div class="v">${totalPct}%</div><div class="l">Flow Coverage</div></div>
+    <div class="summary-card sc-green"><div class="v">${totalP}</div><div class="l">Pass</div></div>
+    <div class="summary-card sc-red"><div class="v">${totalF}</div><div class="l">Fail</div></div>
+    <div class="summary-card sc-gray"><div class="v">${totalS}</div><div class="l">Skip</div></div>
+  </div>
+  <div class="overview-graph-card">
+    <div class="graph-title">Module Map — 点击模块下钻查看状态图</div>
+    <svg id="svg-overview" class="graph" viewBox="0 0 840 380" style="width:100%;display:block"></svg>
+  </div>`;
+  document.getElementById('v-overview').innerHTML = h;
+  drawOverviewGraph();
+}
+
+function drawOverviewGraph() {
+  const svg = document.getElementById('svg-overview');
+  const nmap = {}; MOD_GRAPH.nodes.forEach(n => nmap[n.id] = n);
+
+  // defs
+  const defs = document.createElementNS(NS,'defs');
+  const m = document.createElementNS(NS,'marker');
+  m.setAttribute('id','ov-arrow');
+  m.setAttribute('viewBox','0 0 8 6'); m.setAttribute('refX',7); m.setAttribute('refY',3);
+  m.setAttribute('markerWidth',6); m.setAttribute('markerHeight',5); m.setAttribute('orient','auto-start-reverse');
+  const ap = document.createElementNS(NS,'path');
+  ap.setAttribute('d','M 0 0.5 L 7 3 L 0 5.5 z'); ap.setAttribute('fill','#94a3b8');
+  m.appendChild(ap); defs.appendChild(m); svg.appendChild(defs);
+
+  // edges
+  MOD_GRAPH.edges.forEach(e => {
+    const f=nmap[e.from], t=nmap[e.to]; if(!f||!t) return;
+    const pts = calcBezierPts(f,t);
+    const path = document.createElementNS(NS,'path');
+    path.setAttribute('d', pts.d);
+    path.setAttribute('stroke','#cbd5e1'); path.setAttribute('stroke-width',1.5);
+    path.setAttribute('fill','none'); path.setAttribute('marker-end','url(#ov-arrow)');
+    svg.appendChild(path);
+
+    const lw = e.label.length*6+14;
+    const bg = document.createElementNS(NS,'rect');
+    bg.setAttribute('x',pts.mx-lw/2); bg.setAttribute('y',pts.my-8);
+    bg.setAttribute('width',lw); bg.setAttribute('height',16);
+    bg.setAttribute('rx',8); bg.setAttribute('fill','#fff'); bg.setAttribute('stroke','#e5e7eb'); bg.setAttribute('stroke-width',.5);
+    svg.appendChild(bg);
+    const lt = document.createElementNS(NS,'text');
+    lt.setAttribute('x',pts.mx); lt.setAttribute('y',pts.my+3);
+    lt.setAttribute('text-anchor','middle'); lt.setAttribute('font-size','9'); lt.setAttribute('fill','#999');
+    lt.textContent = e.label; svg.appendChild(lt);
+  });
+
+  // module nodes
+  MOD_GRAPH.nodes.forEach(mn => {
+    const mod = MODULES.find(m=>m.id===mn.id);
+    const p = mod.flows.filter(f=>f.status==='pass').length;
+    const tot = mod.flows.length;
+    const pct = Math.round(p/tot*100);
+    const col = pctColor(pct);
+
+    const g = document.createElementNS(NS,'g');
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', () => showModule(mn.id));
+
+    // shadow
+    const sh = document.createElementNS(NS,'rect');
+    sh.setAttribute('x',mn.x-mn.w/2+2); sh.setAttribute('y',mn.y-mn.h/2+2);
+    sh.setAttribute('width',mn.w); sh.setAttribute('height',mn.h);
+    sh.setAttribute('rx',12); sh.setAttribute('fill','rgba(0,0,0,.04)');
+    g.appendChild(sh);
+
+    const r = document.createElementNS(NS,'rect');
+    r.setAttribute('x',mn.x-mn.w/2); r.setAttribute('y',mn.y-mn.h/2);
+    r.setAttribute('width',mn.w); r.setAttribute('height',mn.h);
+    r.setAttribute('rx',12); r.setAttribute('fill','#fff');
+    r.setAttribute('stroke',col); r.setAttribute('stroke-width',2);
+    g.appendChild(r);
+
+    // progress bar bg
+    const barW = mn.w - 24, barH = 4, barX = mn.x - barW/2, barY = mn.y + 10;
+    const barBg = document.createElementNS(NS,'rect');
+    barBg.setAttribute('x',barX); barBg.setAttribute('y',barY);
+    barBg.setAttribute('width',barW); barBg.setAttribute('height',barH);
+    barBg.setAttribute('rx',2); barBg.setAttribute('fill','#f0f0f0');
+    g.appendChild(barBg);
+    const bar = document.createElementNS(NS,'rect');
+    bar.setAttribute('x',barX); bar.setAttribute('y',barY);
+    bar.setAttribute('width',barW*pct/100); bar.setAttribute('height',barH);
+    bar.setAttribute('rx',2); bar.setAttribute('fill',col);
+    g.appendChild(bar);
+
+    // icon + name
+    const tx = document.createElementNS(NS,'text');
+    tx.setAttribute('x',mn.x); tx.setAttribute('y',mn.y-4);
+    tx.setAttribute('text-anchor','middle'); tx.setAttribute('dominant-baseline','middle');
+    tx.setAttribute('font-size','13'); tx.setAttribute('font-weight','600'); tx.setAttribute('fill','#333');
+    tx.textContent = mod.icon + ' ' + mod.name;
+    g.appendChild(tx);
+
+    // pct
+    const ptx = document.createElementNS(NS,'text');
+    ptx.setAttribute('x',mn.x+mn.w/2-8); ptx.setAttribute('y',mn.y-mn.h/2+12);
+    ptx.setAttribute('text-anchor','end'); ptx.setAttribute('font-size','10');
+    ptx.setAttribute('font-weight','700'); ptx.setAttribute('fill',col);
+    ptx.textContent = pct+'%';
+    g.appendChild(ptx);
+
+    g.addEventListener('mouseenter', ev => {
+      r.setAttribute('stroke-width',3);
+      r.setAttribute('filter','drop-shadow(0 2px 8px rgba(0,0,0,.1))');
+      tip.innerHTML = `<b>${mod.icon} ${mod.name}</b><br>Flow: ${p}/${tot} pass (${pct}%)<br><span style="font-size:11px;color:#aaa">Click to drill down</span>`;
+      tip.style.display='block';
+    });
+    g.addEventListener('mouseleave', () => { r.setAttribute('stroke-width',2); r.removeAttribute('filter'); tip.style.display='none'; });
+    g.addEventListener('mousemove', ev => { tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY-10)+'px'; });
+
+    svg.appendChild(g);
+  });
+}
+
+// ════════════════════════════════════════════
+// Shared Bezier — used by both overview and detail
+// ════════════════════════════════════════════
+function calcBezierPts(f, t) {
+  const dx = t.x - f.x, dy = t.y - f.y;
+  const absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+  // Determine exit/entry sides
+  let x1, y1, x2, y2;
+
+  if (absDy < 10) {
+    // horizontal: exit right/left side
+    if (dx > 0) { x1=f.x+f.w/2; y1=f.y; x2=t.x-t.w/2; y2=t.y; }
+    else { x1=f.x-f.w/2; y1=f.y; x2=t.x+t.w/2; y2=t.y; }
+  } else if (absDx < 10) {
+    // vertical: exit bottom/top
+    if (dy > 0) { x1=f.x; y1=f.y+f.h/2; x2=t.x; y2=t.y-t.h/2; }
+    else { x1=f.x; y1=f.y-f.h/2; x2=t.x; y2=t.y+t.h/2; }
+  } else {
+    // diagonal: pick best side
+    if (dy > 0) {
+      x1=f.x; y1=f.y+f.h/2; x2=t.x; y2=t.y-t.h/2;
+    } else {
+      // going up: exit left side, enter left side
+      x1=f.x-f.w/2; y1=f.y; x2=t.x-t.w/2; y2=t.y;
+    }
+  }
+
+  // Compute control points so curve bends toward the midpoint
+  let c1x, c1y, c2x, c2y;
+  const mx = (x1+x2)/2, my = (y1+y2)/2;
+
+  if (absDy < 10) {
+    // horizontal curve with subtle bend
+    c1x = mx; c1y = y1;
+    c2x = mx; c2y = y2;
+  } else if (dy < 0 && absDx > 10) {
+    // going upward: arc out to the left
+    const off = -50 - absDy * 0.2;
+    c1x = x1 + off; c1y = y1;
+    c2x = x2 + off; c2y = y2;
+  } else {
+    // going downward (most common): S-curve
+    const strength = Math.min(absDy * 0.55, 80);
+    c1x = x1; c1y = y1 + strength;
+    c2x = x2; c2y = y2 - strength;
+  }
+
+  // Shorten the path slightly at the end so the arrowhead sits on the edge
+  // Calculate tangent direction at endpoint for proper arrow orientation
+  const t1 = 0.96; // parameter to evaluate near end of curve
+  // Bezier at t: B(t) = (1-t)^3*P0 + 3(1-t)^2*t*P1 + 3(1-t)*t^2*P2 + t^3*P3
+  const ex = cubicBez(x1, c1x, c2x, x2, t1);
+  const ey = cubicBez(y1, c1y, c2y, y2, t1);
+
+  const labelX = cubicBez(x1, c1x, c2x, x2, 0.5);
+  const labelY = cubicBez(y1, c1y, c2y, y2, 0.5) - 2;
+
+  return {
+    d: `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`,
+    mx: labelX, my: labelY
+  };
+}
+
+function cubicBez(p0, p1, p2, p3, t) {
+  const u = 1-t;
+  return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3;
+}
+
+// ════════════════════════════════════════════
+// Detail
+// ════════════════════════════════════════════
+let curMod = null, activeFlow = null;
+
+function showModule(modId) {
+  curMod = MODULES.find(m=>m.id===modId); if(!curMod) return;
+  activeFlow = null;
+  document.body.classList.remove('hl');
+
+  const p = curMod.flows.filter(f=>f.status==='pass').length;
+  const fl = curMod.flows.filter(f=>f.status==='fail').length;
+  const sk = curMod.flows.filter(f=>f.status==='skip').length;
+  const tot = curMod.flows.length;
+  const pct = Math.round(p/tot*100);
+
+  let h = `
+  <div class="breadcrumb"><a onclick="showView('overview')">← Overview</a> / ${curMod.name}</div>
+  <div class="detail-top">
+    <span class="icon">${curMod.icon}</span>
+    <h2>${curMod.name}</h2>
+    <span class="pct" style="color:${pctColor(pct)}">${pct}% Flow Pass</span>
+  </div>
+  <div class="detail-stats">
+    <div class="detail-stat"><b style="color:${C.pass}">${p}</b>Pass</div>
+    <div class="detail-stat"><b style="color:${C.fail}">${fl}</b>Fail</div>
+    <div class="detail-stat"><b style="color:${C.skip}">${sk}</b>Skip</div>
+    <div class="detail-stat"><b>${tot}</b>Total</div>
+    <div class="detail-stat"><b>${curMod.nodes.length}</b>States</div>
+    <div class="detail-stat"><b>${curMod.edges.length}</b>Edges</div>
+  </div>
+  <div class="graph-card">
+    <div class="graph-title">State Graph</div>
+    <div class="legend">
+      <span><i style="background:${C.pass}"></i> Covered</span>
+      <span><i style="background:${C.fail}"></i> Failed</span>
+      <span><i style="background:${C.uncov}"></i> Uncovered</span>
+      <span><span class="line-s" style="background:${C.hl}"></span> Selected Flow</span>
+    </div>
+    <svg id="svg-${modId}" class="graph" viewBox="0 0 800 ${curMod.svgH}" style="width:100%;display:block"></svg>
+  </div>
+  <div id="flows-${modId}"></div>`;
+  document.getElementById('v-detail').innerHTML = h;
+  showView('detail');
+  drawGraph(curMod);
+  drawFlowSections(curMod);
+}
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v-'+(name==='overview'?'overview':'detail')).classList.add('active');
+  if(name==='overview') { document.body.classList.remove('hl'); activeFlow=null; }
+}
+
+// ── Detail SVG Drawing ──
+function drawGraph(mod) {
+  const svg = document.getElementById('svg-'+mod.id);
+  const nmap = {}; mod.nodes.forEach(n=>nmap[n.id]=n);
+
+  // markers — smaller arrowheads
+  const defs = document.createElementNS(NS,'defs'); svg.appendChild(defs);
+  ['pass','fail','skip','uncov','hl'].forEach(s => {
+    const m = document.createElementNS(NS,'marker');
+    m.setAttribute('id','a-'+mod.id+'-'+s);
+    m.setAttribute('viewBox','0 0 8 6');
+    m.setAttribute('refX',7); m.setAttribute('refY',3);
+    m.setAttribute('markerWidth',5); m.setAttribute('markerHeight',4);
+    m.setAttribute('orient','auto-start-reverse');
+    const p = document.createElementNS(NS,'path');
+    p.setAttribute('d','M 0 0.5 L 7 3 L 0 5.5 z');
+    p.setAttribute('fill', s==='uncov'?C.uncov:(C[s]||C.uncov));
+    m.appendChild(p); defs.appendChild(m);
+  });
+
+  // edges
+  mod.edges.forEach(e => {
+    const f=nmap[e.from], t=nmap[e.to]; if(!f||!t) return;
+    const col = C[e.status]||C.uncov;
+    const un = e.status==='uncov', sk = e.status==='skip';
+    const pts = calcBezierPts(f, t);
+    const eid = e.from+'__'+e.to;
+
+    const path = document.createElementNS(NS,'path');
+    path.setAttribute('d', pts.d);
+    path.setAttribute('stroke',col);
+    path.setAttribute('stroke-width', un?1:1.5);
+    if(un||sk) path.setAttribute('stroke-dasharray','5,3');
+    path.setAttribute('marker-end',`url(#a-${mod.id}-${e.status==='uncov'?'uncov':e.status})`);
+    path.classList.add('ep'); path.dataset.eid=eid;
+    svg.appendChild(path);
+
+    const lw = e.label.length*5.5+12;
+    const bg = document.createElementNS(NS,'rect');
+    bg.setAttribute('x',pts.mx-lw/2); bg.setAttribute('y',pts.my-8);
+    bg.setAttribute('width',lw); bg.setAttribute('height',16);
+    bg.setAttribute('rx',8); bg.setAttribute('fill','#fff');
+    bg.setAttribute('stroke', un?'#e5e7eb':'#f0f0f0'); bg.setAttribute('stroke-width',.5);
+    bg.classList.add('elb'); bg.dataset.eid=eid;
+    svg.appendChild(bg);
+
+    const lt = document.createElementNS(NS,'text');
+    lt.setAttribute('x',pts.mx); lt.setAttribute('y',pts.my+3);
+    lt.setAttribute('text-anchor','middle'); lt.setAttribute('font-size','10');
+    lt.setAttribute('fill', un?'#bbb':'#888');
+    lt.textContent = e.label;
+    lt.classList.add('elt'); lt.dataset.eid=eid;
+    svg.appendChild(lt);
+  });
+
+  // nodes
+  mod.nodes.forEach(n => {
+    const g = document.createElementNS(NS,'g');
+    g.classList.add('ng'); g.dataset.nid=n.id;
+    const bc = C[n.status]||C.uncov;
+    const bg = n.status==='pass'?'#f0fdf4':n.status==='fail'?'#fef2f2':n.status==='skip'?'#f9fafb':'#fafafa';
+
+    const sh = document.createElementNS(NS,'rect');
+    sh.setAttribute('x',n.x-n.w/2+2); sh.setAttribute('y',n.y-n.h/2+2);
+    sh.setAttribute('width',n.w); sh.setAttribute('height',n.h);
+    sh.setAttribute('rx',10); sh.setAttribute('fill','rgba(0,0,0,.04)');
+    g.appendChild(sh);
+
+    const r = document.createElementNS(NS,'rect');
+    r.setAttribute('x',n.x-n.w/2); r.setAttribute('y',n.y-n.h/2);
+    r.setAttribute('width',n.w); r.setAttribute('height',n.h);
+    r.setAttribute('rx',10); r.setAttribute('fill',bg);
+    r.setAttribute('stroke',bc); r.setAttribute('stroke-width',1.8);
+    r.classList.add('nr'); g.appendChild(r);
+
+    const tx = document.createElementNS(NS,'text');
+    tx.setAttribute('x',n.x); tx.setAttribute('y',n.y+1);
+    tx.setAttribute('text-anchor','middle'); tx.setAttribute('dominant-baseline','middle');
+    tx.setAttribute('font-size','12'); tx.setAttribute('font-weight','600');
+    tx.setAttribute('fill', n.status==='uncov'?'#aaa':'#333');
+    tx.textContent = n.label; tx.classList.add('nt'); g.appendChild(tx);
+
+    const dot = document.createElementNS(NS,'circle');
+    dot.setAttribute('cx',n.x+n.w/2-8); dot.setAttribute('cy',n.y-n.h/2+8);
+    dot.setAttribute('r',3); dot.setAttribute('fill',bc); g.appendChild(dot);
+
+    g.addEventListener('mouseenter', ev => {
+      const fls = mod.flows.filter(fl=>fl.path.includes(n.id));
+      const lines = fls.map(fl=>`${fl.status==='pass'?'✅':fl.status==='fail'?'❌':'⏭️'} ${fl.name}`);
+      tip.innerHTML = `<b>${n.label}</b><br>${n.status}${lines.length?'<br><br>'+lines.join('<br>'):''}`;
+      tip.style.display='block';
+    });
+    g.addEventListener('mouseleave', ()=>tip.style.display='none');
+    g.addEventListener('mousemove', ev=>{ tip.style.left=(ev.clientX+14)+'px'; tip.style.top=(ev.clientY-10)+'px'; });
+    svg.appendChild(g);
+  });
+}
+
+// ── Flow Sections ──
+function drawFlowSections(mod) {
+  const el = document.getElementById('flows-'+mod.id);
+  let h = '';
+  FTYPES.forEach(type => {
+    const fls = mod.flows.filter(f=>f.type===type.key);
+    if(!fls.length) return;
+    const pc = fls.filter(f=>f.status==='pass').length;
+    h += `<div class="flow-section">
+      <div class="flow-sec-title"><span class="dot" style="background:${type.color}"></span>${type.icon} ${type.label}<span style="font-weight:400;font-size:12px;color:#999;margin-left:4px">(${pc}/${fls.length} pass)</span></div>
+      <table class="ftable"><thead><tr><th style="width:60px">Status</th><th>Flow</th><th>Path</th></tr></thead><tbody>`;
+    fls.forEach(f => {
+      h += `<tr data-fid="${f.id}" onmouseenter="hlFlow('${f.id}')" onmouseleave="clrHl()" onclick="togFlow('${f.id}')">
+        <td><span class="badge ${f.status}">${f.status.toUpperCase()}</span></td>
+        <td style="font-weight:600">${f.name}</td>
+        <td class="fp">${f.desc}</td></tr>`;
+    });
+    h += '</tbody></table></div>';
+  });
+  el.innerHTML = h;
+}
+
+function hlFlow(fid) { if(activeFlow) return; applyHl(fid); }
+function clrHl() { if(activeFlow) return; rmHl(); }
+function togFlow(fid) {
+  if(activeFlow===fid) { activeFlow=null; rmHl(); document.querySelectorAll('.ftable tr.active').forEach(r=>r.classList.remove('active')); }
+  else { activeFlow=fid; document.querySelectorAll('.ftable tr.active').forEach(r=>r.classList.remove('active')); document.querySelector(`tr[data-fid="${fid}"]`)?.classList.add('active'); applyHl(fid); }
+}
+
+function applyHl(fid) {
+  if(!curMod) return;
+  const fl = curMod.flows.find(f=>f.id===fid); if(!fl) return;
+  document.body.classList.add('hl');
+  const svg = document.getElementById('svg-'+curMod.id);
+  const pn = new Set(fl.path), pe = new Set(fl.edges.map(([a,b])=>a+'__'+b));
+  svg.querySelectorAll('.ng').forEach(g=>{ g.classList.toggle('lit',pn.has(g.dataset.nid)); g.classList.toggle('dim',!pn.has(g.dataset.nid)); });
+  svg.querySelectorAll('.ep').forEach(p=>{ p.classList.toggle('lit',pe.has(p.dataset.eid)); p.classList.toggle('dim',!pe.has(p.dataset.eid)); });
+  svg.querySelectorAll('.elb,.elt').forEach(el=>{ el.classList.toggle('dim',!pe.has(el.dataset.eid)); });
+}
+function rmHl() {
+  document.body.classList.remove('hl');
+  if(!curMod) return;
+  const svg = document.getElementById('svg-'+curMod.id);
+  svg.querySelectorAll('.lit,.dim').forEach(el=>el.classList.remove('lit','dim'));
+}
+
+renderOverview();
+</script>
+</body>
+</html>

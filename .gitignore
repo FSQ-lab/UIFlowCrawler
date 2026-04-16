@@ -1,0 +1,23 @@
+# Exploration output (generated data, screenshots, reports)
+e2e_output/
+e2e_output_ignore*/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/projects/
+.claude/plans/
+.claude/memory/
+
+# MCP server config (contains local paths)
+.mcp.json
+
+# macOS
+.DS_Store
+
+# uv
+.python-version

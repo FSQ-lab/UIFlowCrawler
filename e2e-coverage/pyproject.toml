@@ -1,0 +1,12 @@
+[project]
+name = "e2e-coverage"
+version = "0.1.0"
+description = "Greedy UI crawler for macOS app E2E coverage"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=1.23.0",
+    "janus>=2.0.0",
+]
+
+[project.scripts]
+crawler = "scripts.crawler:main"
