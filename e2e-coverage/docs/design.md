@@ -26,8 +26,10 @@ E2E Coverage 是一个基于 LLM Agent 的黑盒 UI 自动探索系统，用于 
 | 设计决策 | Harness Engineering 原则 |
 |---------|------------------------|
 | Advisor 算法控制探索顺序（不由 LLM 决定下一步点什么） | 减少 LLM 决策空间（Action Space） |
-| Phase 0 结束后对初始状态的非目标元素逐个 skip（不做全局 label 黑名单） | 精确过滤，避免误伤深层同名元素 |
-| Skip 命令强制单次 + 必须带 reason + 分离存储 | 防呆设计（Poka-yoke） |
+| Phase 0 用全局 blacklist 子串匹配过滤非目标元素（替代逐个 skip） | 减少 LLM 操作量，一次调用覆盖所有状态 |
+| Skip 命令强制单次 + 必须带 reason + 分离存储（已演进为 blacklist，见 §10.10） | 防呆设计（Poka-yoke） |
+| 状态命名延迟到 Phase 1.75（见 §10.11） | 渐进式披露（Progressive Disclosure） |
+| MCP 返回数据写盘而非返回 context（见 §10.9） | 上下文预算管理（Context Budget） |
 | 独立 Evaluator sub-agent 审查探索结果 | Generator-Evaluator 分离模式 |
 | `crawler_state.json` 持久化全部状态 | 结构化状态交接（Context Handoff） |
 
@@ -631,7 +633,7 @@ Anthropic 研究发现 "agents asked to evaluate their own work tend to confiden
 
 独立 Sub-agent 的优势：全新 context window（无探索过程中积累的偏见），被 prompt 为严格的 QA 审查者角色。通信通过文件（crawler_state.json）而非对话，确保结构化交接。
 
-### 10.4 为什么去掉 chrome_labels.txt 全局黑名单
+### 10.4 为什么去掉 chrome_labels.txt 全局黑名单（已被 §10.10 取代）
 
 早期设计在 Phase 0 捕获初始页面所有元素 label 存入 `chrome_labels.txt`，advisor 在所有 state 中按 label 文本匹配自动 skip。两个问题：
 
@@ -655,6 +657,108 @@ macOS 菜单栏的菜单项（含快捷键）只有展开菜单后才出现在 a
 ### 10.8 状态指纹为什么不含 selected/checked
 
 DroidBot 的指纹包含 `checked + selected`，但我们有意去掉。原因：macOS 应用中大量元素有 selected 状态（如 tab 切换、列表选中），如果纳入指纹，同一个面板仅因选中项不同就会产生大量不同 state_id，导致状态爆炸。权衡后选择不含 selected/checked，以牺牲少量精度换取状态空间的可控性。
+
+### 10.9 MCP 调用改为 page_source 写盘模式
+
+**问题**：每次 MCP 动作（click、type、get_page_source_tree 等）都返回完整 page_source XML（50KB+）到 LLM 上下文。探索 35 个状态 × 每状态 10+ 动作 = 350+ 次调用，context 被 XML 淹没，LLM 指令遵循能力急剧下降。
+
+**方案**：MCP server 支持 `page_source_file` 参数——传入绝对路径后，server 把 XML 写到该文件，只返回短确认信息。LLM 需要读 UI 内容时用 `Read` 工具按需读取文件。
+
+**效果**：单次 MCP 调用的 context 消耗从 ~50KB 降到 <1KB。探索过程中 LLM 对后续指令的遵循度明显提升（不再在长 context 后期跳过元素或忽略恢复步骤）。
+
+**设计思路**：这是一种 **上下文预算管理** 策略。LLM 的 context window 是有限资源，把大量重复的结构化数据放到文件系统比放到 context 里更高效。LLM 的 Read 工具天然支持按需加载，无需额外基础设施。
+
+### 10.10 非目标元素过滤从逐个 skip 改为全局 blacklist
+
+**问题**：§10.4 的方案（去掉全局黑名单，改为逐个 skip）在实际运行中暴露了新问题——初始状态有 50+ 元素，其中 30+ 个是浏览器 chrome（地址栏、各种工具栏按钮、NTP 内容），每个都需要单独调用 `advisor skip`，加上 reason 参数，Phase 0 变成 30+ 次 CLI 调用。这不仅消耗 context，而且 LLM 在重复执行 skip 命令时经常遗漏或者给出草率的 reason。
+
+**方案**：引入 `advisor blacklist --labels "Address and search bar,Copilot,Profile,Chat"` 命令。blacklist 使用子串匹配，存储在独立的 `blacklist.json` 中，advisor 在所有状态中自动过滤匹配元素。一次调用替代 30+ 次 skip。
+
+**权衡**：子串匹配有误伤风险（比如黑名单中 "History" 会误伤 "History" 面板中的目标元素）。但实际使用中发现，只要 blacklist 粒度足够细（用 "Address and search bar" 而非 "bar"），误伤概率极低。且 blacklist 是独立文件，可随时修改。
+
+**与 §10.4 的关系**：§10.4 去掉了纯 label 文本匹配的 `chrome_labels.txt`，理由是"探索目标可能就是 app 功能本身"。现在的 blacklist 本质上是同一思路的改良——只在用户指定 feature scope 时才使用，且由 LLM 根据语义选择要 blacklist 的标签，而非自动捕获初始页面所有元素。
+
+### 10.11 状态命名延迟到探索后（渐进式披露）
+
+**问题**：V1 要求 LLM 在 `advisor record` 时通过 `--window-title` 参数给新状态命名。但这增加了探索循环中每一步的认知负担：LLM 需要在执行动作 → 判断结果 → 处理恢复的同时，还要生成一个准确的状态标题。实际运行中标题质量不稳定——有时太短（"State 1"），有时太长（"The page after clicking export"），有时直接复制了窗口标题栏文本。
+
+**方案**：探索阶段的 `record` 命令不再要求 `--window-title`，advisor 使用触发动作自动生成临时标题（如 "CLICK(More options) from s_xxx"）。探索完成后新增 **Phase 1.75: Name States** —— LLM 逐个读取截图和 state JSON，结合 transitions 上下文，统一命名所有状态，通过 `advisor rename-state` 更新。
+
+**设计思路**：这是 **渐进式披露（Progressive Disclosure）** 的应用。探索循环的核心任务是"执行动作、记录结果"，不需要在此时加载命名任务。延迟到专门的 Phase 后，LLM 可以：(1) 看截图而非只看 page_source 文本；(2) 有完整的 transitions 图理解状态间关系；(3) 在 fresh 的认知状态下做命名，而非在被 50+ 次 MCP 调用消耗后。
+
+### 10.12 列表元素的自动去重
+
+**问题**：历史记录、收藏夹等列表类 UI 包含大量结构相同的条目（如 20 条历史记录 = 20 个 OutlineRow + 20 个 Delete 按钮）。advisor 会为每个条目生成独立的 explore 任务，导致 40+ 次重复操作，每次结果都是 same_state 或 known_state，纯属浪费。
+
+**方案**：normalize.py 新增 `detect_list_groups()` 函数，通过空间布局自动检测列表组：
+- 相同元素类型
+- 相同 x 坐标（±10px，通过 `x//20` 分桶实现）
+- 连续 y 坐标（间距 ≤ 50px）
+- 组内 ≥ 3 个元素
+
+检测到列表组后，只保留第一个和最后一个元素作为代表，其余元素在 advisor 的 `get_unexplored()` 中被自动跳过。
+
+**效果**：Edge History 页面的 interactive_elements 从 80+ 个有效探索目标降到 ~30 个，探索效率提升约 60%。
+
+**风险**：如果列表中某个条目有特殊行为（如第三个条目有不同的右键菜单），会被跳过。目前认为这种情况极少，且 Evaluator 可以在 Phase 1.5 发现遗漏。
+
+### 10.13 元素父子关系标注
+
+**问题**：macOS accessibility tree 中，按钮的父容器（如 Group、Cell）有时也是可交互元素。normalize.py 提取出的 interactive_elements 同时包含父和子，advisor 会分别安排探索——但点击父容器实际上就是点击子按钮，产生重复。
+
+**方案**：normalize.py 在解析时为每个 interactive_element 标注 `has_children: true/false`——该元素的 XML 子树中是否包含其他 interactive_element。advisor 在 `get_unexplored()` 中可据此做智能过滤（如跳过有子交互元素的容器级元素）。
+
+### 10.14 快捷键采集抽离为独立阶段
+
+**问题**：V1 的快捷键信息散落在各 state detail 的 `shortcuts` 数组中（normalize.py 被动提取），Flow 设计时需要遍历所有 state detail 才能收集完整的快捷键列表。且不同状态可能发现相同的快捷键（如 `⌘D` 出现在每个有收藏按钮的状态中），需要去重。
+
+**方案**：
+1. normalize.py 提取的快捷键统一写入 `shortcuts_raw.json`（追加模式，包含 source_state）
+2. Phase 1.75 新增 **Curate Shortcuts** 步骤——LLM 去重、判断是否属于目标功能范围、写入 utg.json 的 `shortcuts` 数组
+3. Phase 2 Flow 设计时直接读 utg.json 的 `shortcuts` 即可
+
+**设计思路**：再次体现渐进式披露——快捷键的采集（Phase 1, 自动）、筛选（Phase 1.75, LLM）、消费（Phase 2, Flow 设计）分三个阶段，每个阶段只关注自己的职责。
+
+### 10.15 bdd-gen 的两阶段生成
+
+**问题**：bdd-gen V1 一次性读取所有 state detail 文件再生成 Gherkin。Edge History 有 35 个状态、每个 50-80 个 interactive_elements，全部加载到 context 约 200KB+，LLM 在后半段生成的 scenario 质量明显下降（前置条件变模糊、assertion 变笼统）。
+
+**方案**：拆为两阶段：
+- **Phase 1（Macro Planning）**：只读 utg.json + flows.json（轻量），按功能分组，为每组写 `design_notes`（prompt-to-self 备忘录），输出 `_plan.json`
+- **Phase 2（Group-by-Group）**：逐组读取该组涉及的 state detail 文件（通常 3-7 个），生成该组的 scenarios 后立即写入 feature 文件，然后释放这些 state detail 的 context
+
+**核心机制 — `design_notes` 作为跨 Phase 的记忆传递**：Phase 1 的分析结论（如"这组 flow 需要 boundary 扩展因为有搜索输入框"）写入 `_plan.json` 的 `design_notes` 字段。Phase 2 在处理每组前重新读取这个字段，恢复策略上下文。本质上是 LLM 给自己写的 memo，解决了分阶段处理时的信息丢失问题。
+
+**效果**：每组生成时 context 中只有 3-7 个 state 的数据（~30KB），scenario 质量在前后半段保持一致。
+
+### 10.16 BDD 前置条件从抽象描述改为显式步骤
+
+**问题**：V1 生成的 Given 步骤使用抽象状态描述（如 `Given the Favorites panel is open`），自动化执行时不知道该如何操作。人工测试时也需要反查文档才知道怎么到达该状态。
+
+**方案**：要求所有 Given 步骤表达为显式、可重放的操作序列：
+
+```gherkin
+# V1（抽象，不可执行）
+Given the History full page is open
+
+# V2（显式，可直接映射到 MCP 动作）
+Given I launch the Edge browser
+And I press "Command+Y" to open the History full page
+```
+
+UTG 的 transitions 数据提供了从 start_state 到任意状态的导航路径，LLM 据此生成 Given 中的每一步 And。
+
+**设计思路**：BDD 的 Given 本质上是测试的 setup——应该是确定性的、可重放的，而非需要人理解的抽象描述。显式步骤可以直接映射到未来的自动化执行（MCP 调用），打通了 bdd-gen → 自动执行的链路。
+
+### 10.17 BDD 新增未覆盖元素和右键菜单扩展策略
+
+**问题**：V1 的 test expansion 只基于 flow 本身做变体（正向/异常/边界），不会发现 flow 没覆盖到的交互元素。例如删除确认对话框有 Cancel 和 Delete 两个按钮，但 flow 只覆盖了 Cancel → 完全没有 Delete 的测试。
+
+**方案**：新增两种扩展策略：
+1. **Uncovered interactive elements**：交叉引用 state 的 `interactive_elements` 列表与该 state 涉及的所有 flow 动作，识别"存在但没被任何 flow 操作的元素"，为其生成 scenario
+2. **Right-click context menu expansion**：右键菜单状态包含 N 个 MenuItem，但 flow 可能只覆盖了其中几个 → 为每个未覆盖的 MenuItem 生成独立 scenario
+
+**效果**：Edge History 的 BDD 中，Delete 确认对话框的 Delete 按钮、Export 对话框的 Export 按钮、More Options 菜单的 Export Browsing Data 选项等都被自动补充了测试覆盖。
 
 ---
 
