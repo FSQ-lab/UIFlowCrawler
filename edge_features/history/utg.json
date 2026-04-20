@@ -1,0 +1,623 @@
+{
+  "app_name": "Microsoft Edge",
+  "start_state": "s_8bf4f23d",
+  "states": {
+    "s_8bf4f23d": {
+      "window_title": "History Sidebar Panel on All Tab",
+      "interactive_elements_count": 59,
+      "screenshot": "states/s_8bf4f23d.png",
+      "title": "History Sidebar Panel on All Tab"
+    },
+    "s_8690b76a": {
+      "window_title": "History Full Page",
+      "interactive_elements_count": 31,
+      "screenshot": "states/s_8690b76a.png",
+      "title": "History Full Page"
+    },
+    "s_b298df01": {
+      "window_title": "[OOS] Delete Browsing Data Settings Page",
+      "interactive_elements_count": 34,
+      "screenshot": "states/s_b298df01.png",
+      "title": "[OOS] Delete Browsing Data Settings Page"
+    },
+    "s_48c40f22": {
+      "window_title": "History Sidebar Panel Pinned",
+      "interactive_elements_count": 59,
+      "screenshot": "states/s_48c40f22.png",
+      "title": "History Sidebar Panel Pinned"
+    },
+    "s_aa512a5e": {
+      "window_title": "History Sidebar More Options Menu",
+      "interactive_elements_count": 64,
+      "screenshot": "states/s_aa512a5e.png",
+      "title": "History Sidebar More Options Menu"
+    },
+    "s_b3f75c9a": {
+      "window_title": "History Sidebar Recently Closed Tab",
+      "interactive_elements_count": 74,
+      "screenshot": "states/s_b3f75c9a.png",
+      "title": "History Sidebar Recently Closed Tab"
+    },
+    "s_ac240a00": {
+      "window_title": "History Sidebar Tabs From Other Devices",
+      "interactive_elements_count": 54,
+      "screenshot": "states/s_ac240a00.png",
+      "title": "History Sidebar Tabs From Other Devices"
+    },
+    "s_3bbbace4": {
+      "window_title": "History Sidebar Context Menu on Entry",
+      "interactive_elements_count": 66,
+      "screenshot": "states/s_3bbbace4.png",
+      "title": "History Sidebar Context Menu on Entry"
+    },
+    "s_5fb5006b": {
+      "window_title": "History Full Page Filter By Date Dropdown",
+      "interactive_elements_count": 35,
+      "screenshot": "states/s_5fb5006b.png",
+      "title": "History Full Page Filter By Date Dropdown"
+    },
+    "s_ff0fd3c3": {
+      "window_title": "[OOS] GitHub Sign-in Page",
+      "interactive_elements_count": 11,
+      "screenshot": "states/s_ff0fd3c3.png",
+      "title": "[OOS] GitHub Sign-in Page"
+    },
+    "s_2ed72dfd": {
+      "window_title": "History Full Page Export Browsing Data Dialog",
+      "interactive_elements_count": 13,
+      "screenshot": "states/s_2ed72dfd.png",
+      "title": "History Full Page Export Browsing Data Dialog"
+    },
+    "s_6039215b": {
+      "window_title": "History Full Page Search Results",
+      "interactive_elements_count": 25,
+      "screenshot": "states/s_6039215b.png",
+      "title": "History Full Page Search Results"
+    },
+    "s_bc771f66": {
+      "window_title": "History Sidebar Panel with Hover Tooltip",
+      "interactive_elements_count": 62,
+      "screenshot": "states/s_bc771f66.png",
+      "title": "History Sidebar Panel with Hover Tooltip"
+    },
+    "s_7069e62d": {
+      "window_title": "[OOS] Page Opened in New Window",
+      "interactive_elements_count": 71,
+      "screenshot": "states/s_7069e62d.png",
+      "title": "[OOS] Page Opened in New Window"
+    },
+    "s_0e21bfda": {
+      "window_title": "[OOS] Page Opened in InPrivate Window",
+      "interactive_elements_count": 68,
+      "screenshot": "states/s_0e21bfda.png",
+      "title": "[OOS] Page Opened in InPrivate Window"
+    },
+    "s_b6d1bbcb": {
+      "window_title": "History Sidebar Delete Entry Confirmation Dialog",
+      "interactive_elements_count": 47,
+      "screenshot": "states/s_b6d1bbcb.png",
+      "title": "History Sidebar Delete Entry Confirmation Dialog"
+    },
+    "s_7103e59b": {
+      "window_title": "History Sidebar Filtered by Site",
+      "interactive_elements_count": 57,
+      "screenshot": "states/s_7103e59b.png",
+      "title": "History Sidebar Filtered by Site"
+    },
+    "s_e158fd2f": {
+      "window_title": "History Full Page via More Options",
+      "interactive_elements_count": 31,
+      "screenshot": "states/s_e158fd2f.png",
+      "title": "History Full Page via More Options"
+    },
+    "s_b8c0e458": {
+      "window_title": "History Full Page Context Menu on Entry",
+      "interactive_elements_count": 82,
+      "screenshot": "states/s_b8c0e458.png",
+      "title": "History Full Page Context Menu on Entry"
+    },
+    "s_7f4b9efb": {
+      "window_title": "Entry Opened in New Tab (OOS)",
+      "interactive_elements_count": 76,
+      "screenshot": "states/s_7f4b9efb.png",
+      "title": "Entry Opened in New Tab (OOS)"
+    },
+    "s_1af4713c": {
+      "window_title": "History Full Page (Post Action)",
+      "interactive_elements_count": 75,
+      "screenshot": "states/s_1af4713c.png",
+      "title": "History Full Page (Post Action)"
+    },
+    "s_33905f63": {
+      "window_title": "Full Page Delete Confirmation Dialog",
+      "interactive_elements_count": 24,
+      "screenshot": "states/s_33905f63.png",
+      "title": "Full Page Delete Confirmation Dialog"
+    },
+    "s_1c471376": {
+      "window_title": "Full Page Filtered by Site",
+      "interactive_elements_count": 62,
+      "screenshot": "states/s_1c471376.png",
+      "title": "Full Page Filtered by Site"
+    },
+    "s_6c5c377f": {
+      "window_title": "History Full Page (All)",
+      "interactive_elements_count": 76,
+      "screenshot": "states/s_6c5c377f.png",
+      "title": "History Full Page (All)"
+    },
+    "s_41530969": {
+      "window_title": "Delete Browsing Data Dialog",
+      "interactive_elements_count": 30,
+      "screenshot": "states/s_41530969.png",
+      "title": "Delete Browsing Data Dialog"
+    },
+    "s_43b72eac": {
+      "window_title": "Filter By Date Dropdown Open",
+      "interactive_elements_count": 80,
+      "screenshot": "states/s_43b72eac.png",
+      "title": "Filter By Date Dropdown Open"
+    },
+    "s_825e6cdf": {
+      "window_title": "Recently Closed Section",
+      "interactive_elements_count": 53,
+      "screenshot": "states/s_825e6cdf.png",
+      "title": "Recently Closed Section"
+    },
+    "s_12b7a962": {
+      "window_title": "Tabs From Other Devices Section",
+      "interactive_elements_count": 52,
+      "screenshot": "states/s_12b7a962.png",
+      "title": "Tabs From Other Devices Section"
+    },
+    "s_32eb1504": {
+      "window_title": "History Sidebar (Unpinned, after Unpin)",
+      "interactive_elements_count": 93,
+      "screenshot": "states/s_32eb1504.png",
+      "title": "History Sidebar (Unpinned, after Unpin)"
+    },
+    "s_29a108a0": {
+      "window_title": "Browser Page (History Closed)",
+      "interactive_elements_count": 20,
+      "screenshot": "states/s_29a108a0.png",
+      "title": "Browser Page (History Closed)"
+    },
+    "s_23488ace": {
+      "window_title": "History Full Page (Filtered: Today)",
+      "interactive_elements_count": 77,
+      "screenshot": "states/s_23488ace.png",
+      "title": "History Full Page (Filtered: Today)"
+    },
+    "s_54505315": {
+      "window_title": "History Full Page (Filtered: Yesterday)",
+      "interactive_elements_count": 28,
+      "screenshot": "states/s_54505315.png",
+      "title": "History Full Page (Filtered: Yesterday)"
+    },
+    "s_cf26e2ad": {
+      "window_title": "History Full Page (Date Range Picker)",
+      "interactive_elements_count": 25,
+      "screenshot": "states/s_cf26e2ad.png",
+      "title": "History Full Page (Date Range Picker)"
+    },
+    "s_e74bd41f": {
+      "window_title": "Export Browsing Data Dialog",
+      "interactive_elements_count": 24,
+      "screenshot": "states/s_e74bd41f.png",
+      "title": "Export Browsing Data Dialog"
+    },
+    "s_8a50e194": {
+      "window_title": "History Full Page (Search Results)",
+      "interactive_elements_count": 78,
+      "screenshot": "states/s_8a50e194.png",
+      "title": "History Full Page (Search Results)"
+    }
+  },
+  "transitions": [
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_8690b76a",
+      "action": "CLICK(History)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_b298df01",
+      "action": "CLICK(Delete Browsing Data)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_48c40f22",
+      "action": "CLICK(Pin history)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_aa512a5e",
+      "action": "CLICK(More options)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_b3f75c9a",
+      "action": "CLICK(Recently Closed)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_ac240a00",
+      "action": "CLICK(Tabs From Other Devices)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_b3f75c9a",
+      "action": "CLICK(All)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_3bbbace4",
+      "action": "RIGHT_CLICK(E2E Coverage \u2014 Microsoft Edge, 2:32 AM, file:///Users/ljp-test-mac-mini/Proje...)"
+    },
+    {
+      "from": "s_8690b76a",
+      "to": "s_5fb5006b",
+      "action": "CLICK(Filter By Date)"
+    },
+    {
+      "from": "s_8bf4f23d",
+      "to": "s_ff0fd3c3",
+      "action": "CLICK(Today - Friday, April 17, 2026)"
+    },
+    {
+      "from": "s_8690b76a",
+      "to": "s_2ed72dfd",
+      "action": "CLICK(Export Browsing Data)"
+    },
+    {
+      "from": "s_8690b76a",
+      "to": "s_6039215b",
+      "action": "TYPE(Search history)"
+    },
+    {
+      "from": "s_3bbbace4",
+      "to": "s_bc771f66",
+      "action": "CLICK(Open in New Tab)"
+    },
+    {
+      "from": "s_3bbbace4",
+      "to": "s_7069e62d",
+      "action": "CLICK(Open in New Window)"
+    },
+    {
+      "from": "s_3bbbace4",
+      "to": "s_0e21bfda",
+      "action": "CLICK(Open in New InPrivate Window)"
+    },
+    {
+      "from": "s_3bbbace4",
+      "to": "s_bc771f66",
+      "action": "CLICK(Copy Link)"
+    },
+    {
+      "from": "s_3bbbace4",
+      "to": "s_b6d1bbcb",
+      "action": "CLICK(Delete)"
+    },
+    {
+      "from": "s_b6d1bbcb",
+      "to": "s_b3f75c9a",
+      "action": "CLICK(Cancel)"
+    },
+    {
+      "from": "s_3bbbace4",
+      "to": "s_7103e59b",
+      "action": "CLICK(More from the Same Site)"
+    },
+    {
+      "from": "s_aa512a5e",
+      "to": "s_e158fd2f",
+      "action": "CLICK(Open History Page)"
+    },
+    {
+      "from": "s_aa512a5e",
+      "to": "s_bc771f66",
+      "action": "CLICK(Hide History Button from Toolbar)"
+    },
+    {
+      "from": "s_aa512a5e",
+      "to": "s_bc771f66",
+      "action": "CLICK(Hide Duplicate Pages)"
+    },
+    {
+      "from": "s_8690b76a",
+      "to": "s_b8c0e458",
+      "action": "RIGHT_CLICK(Engineering Hub)"
+    },
+    {
+      "from": "s_b8c0e458",
+      "to": "s_7f4b9efb",
+      "action": "CLICK(Open in New Tab)"
+    },
+    {
+      "from": "s_b8c0e458",
+      "to": "s_1af4713c",
+      "action": "CLICK(Copy Link)"
+    },
+    {
+      "from": "s_b8c0e458",
+      "to": "s_1af4713c",
+      "action": "CLICK(Open in New Window)"
+    },
+    {
+      "from": "s_b8c0e458",
+      "to": "s_1af4713c",
+      "action": "CLICK(Open in New InPrivate Window)"
+    },
+    {
+      "from": "s_b8c0e458",
+      "to": "s_33905f63",
+      "action": "CLICK(Delete)"
+    },
+    {
+      "from": "s_33905f63",
+      "to": "s_1af4713c",
+      "action": "CLICK(Cancel)"
+    },
+    {
+      "from": "s_b8c0e458",
+      "to": "s_1c471376",
+      "action": "CLICK(More from the Same Site)"
+    },
+    {
+      "from": "s_1c471376",
+      "to": "s_6c5c377f",
+      "action": "CLICK(Clear search)"
+    },
+    {
+      "from": "s_6c5c377f",
+      "to": "s_41530969",
+      "action": "CLICK(Delete Browsing Data)"
+    },
+    {
+      "from": "s_6c5c377f",
+      "to": "s_43b72eac",
+      "action": "CLICK(Filter By Date)"
+    },
+    {
+      "from": "s_6c5c377f",
+      "to": "s_825e6cdf",
+      "action": "CLICK(Recently Closed)"
+    },
+    {
+      "from": "s_6c5c377f",
+      "to": "s_12b7a962",
+      "action": "CLICK(Tabs From Other Devices)"
+    },
+    {
+      "from": "s_48c40f22",
+      "to": "s_32eb1504",
+      "action": "CLICK(Unpin history)"
+    },
+    {
+      "from": "s_48c40f22",
+      "to": "s_29a108a0",
+      "action": "CLICK(Close history)"
+    },
+    {
+      "from": "s_43b72eac",
+      "to": "s_23488ace",
+      "action": "CLICK(Today)"
+    },
+    {
+      "from": "s_43b72eac",
+      "to": "s_54505315",
+      "action": "CLICK(Yesterday)"
+    },
+    {
+      "from": "s_43b72eac",
+      "to": "s_23488ace",
+      "action": "CLICK(Last Week)"
+    },
+    {
+      "from": "s_43b72eac",
+      "to": "s_cf26e2ad",
+      "action": "CLICK(Date Range)"
+    },
+    {
+      "from": "s_cf26e2ad",
+      "to": "s_23488ace",
+      "action": "CLICK(Cancel)"
+    },
+    {
+      "from": "s_43b72eac",
+      "to": "s_23488ace",
+      "action": "CLICK(Clear Filter)"
+    },
+    {
+      "from": "s_8690b76a",
+      "to": "s_e74bd41f",
+      "action": "CLICK(Export Browsing Data)"
+    },
+    {
+      "from": "s_e74bd41f",
+      "to": "s_23488ace",
+      "action": "CLICK(Cancel)"
+    },
+    {
+      "from": "s_8690b76a",
+      "to": "s_8a50e194",
+      "action": "TYPE(Search history, github)"
+    },
+    {
+      "from": "s_8a50e194",
+      "to": "s_23488ace",
+      "action": "CLICK(Clear search)"
+    }
+  ],
+  "edges": [
+    [
+      "s_8bf4f23d",
+      "s_8690b76a"
+    ],
+    [
+      "s_8bf4f23d",
+      "s_b298df01"
+    ],
+    [
+      "s_8bf4f23d",
+      "s_48c40f22"
+    ],
+    [
+      "s_8bf4f23d",
+      "s_aa512a5e"
+    ],
+    [
+      "s_8bf4f23d",
+      "s_b3f75c9a"
+    ],
+    [
+      "s_8bf4f23d",
+      "s_ac240a00"
+    ],
+    [
+      "s_8bf4f23d",
+      "s_3bbbace4"
+    ],
+    [
+      "s_8690b76a",
+      "s_5fb5006b"
+    ],
+    [
+      "s_8bf4f23d",
+      "s_ff0fd3c3"
+    ],
+    [
+      "s_8690b76a",
+      "s_2ed72dfd"
+    ],
+    [
+      "s_8690b76a",
+      "s_6039215b"
+    ],
+    [
+      "s_3bbbace4",
+      "s_bc771f66"
+    ],
+    [
+      "s_3bbbace4",
+      "s_7069e62d"
+    ],
+    [
+      "s_3bbbace4",
+      "s_0e21bfda"
+    ],
+    [
+      "s_3bbbace4",
+      "s_b6d1bbcb"
+    ],
+    [
+      "s_b6d1bbcb",
+      "s_b3f75c9a"
+    ],
+    [
+      "s_3bbbace4",
+      "s_7103e59b"
+    ],
+    [
+      "s_aa512a5e",
+      "s_e158fd2f"
+    ],
+    [
+      "s_aa512a5e",
+      "s_bc771f66"
+    ],
+    [
+      "s_8690b76a",
+      "s_b8c0e458"
+    ],
+    [
+      "s_b8c0e458",
+      "s_7f4b9efb"
+    ],
+    [
+      "s_b8c0e458",
+      "s_1af4713c"
+    ],
+    [
+      "s_b8c0e458",
+      "s_33905f63"
+    ],
+    [
+      "s_33905f63",
+      "s_1af4713c"
+    ],
+    [
+      "s_b8c0e458",
+      "s_1c471376"
+    ],
+    [
+      "s_1c471376",
+      "s_6c5c377f"
+    ],
+    [
+      "s_6c5c377f",
+      "s_41530969"
+    ],
+    [
+      "s_6c5c377f",
+      "s_43b72eac"
+    ],
+    [
+      "s_6c5c377f",
+      "s_825e6cdf"
+    ],
+    [
+      "s_6c5c377f",
+      "s_12b7a962"
+    ],
+    [
+      "s_48c40f22",
+      "s_32eb1504"
+    ],
+    [
+      "s_48c40f22",
+      "s_29a108a0"
+    ],
+    [
+      "s_43b72eac",
+      "s_23488ace"
+    ],
+    [
+      "s_43b72eac",
+      "s_54505315"
+    ],
+    [
+      "s_43b72eac",
+      "s_cf26e2ad"
+    ],
+    [
+      "s_cf26e2ad",
+      "s_23488ace"
+    ],
+    [
+      "s_8690b76a",
+      "s_e74bd41f"
+    ],
+    [
+      "s_e74bd41f",
+      "s_23488ace"
+    ],
+    [
+      "s_8690b76a",
+      "s_8a50e194"
+    ],
+    [
+      "s_8a50e194",
+      "s_23488ace"
+    ]
+  ],
+  "shortcuts": [],
+  "stats": {
+    "total_states": 35,
+    "total_transitions": 47,
+    "total_actions": 47,
+    "explored_pairs": 1525,
+    "elapsed_seconds": 229878
+  }
+}

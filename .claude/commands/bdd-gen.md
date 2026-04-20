@@ -21,104 +21,109 @@ Generate BDD Gherkin `.feature` files from the flows and state data produced by 
 
 ```
 e2e_output/features/
+├── _plan.json               # Intermediate plan (deleted after generation)
 └── <feature_name>.feature    # Gherkin BDD test cases
 ```
 
 ---
 
-## Execution Flow
+## Execution Flow — Two-Phase Generation
 
-### Step 1: Read Data
+The generation process is split into two phases to avoid overloading the LLM context with too much information at once. Phase 1 does macro planning without reading state detail files. Phase 2 generates scenarios group by group, reading only the state files relevant to each group.
 
-1. Read `e2e_output/utg.json` — get `app_name`, `start_state`, and all state titles
+### Phase 1: Macro Planning
+
+**Goal:** Understand all flows at a high level, group them by functionality, and plan the test design strategy for each group — WITHOUT reading any state detail files.
+
+**Input:** Only `utg.json` and `flows.json`.
+
+#### Step 1.1: Read High-Level Data
+
+1. Read `e2e_output/utg.json` — get `app_name`, `start_state`, all state titles (window_title), and `shortcuts`
 2. Read `e2e_output/flows.json` — get all flow definitions
-3. For each unique state ID referenced in flows, read `e2e_output/states/<state_id>.json` to get `ui_tree` and `interactive_elements`
 
-### Step 2: Determine Feature Name
+**DO NOT read any `e2e_output/states/*.json` files in this phase.** State titles from utg.json provide enough context for grouping.
 
-- If the user specified a feature name, use it
-- Otherwise, infer from `app_name` + the flow content (e.g. "Edge Favorites")
+#### Step 1.2: Group Flows by Functionality
 
-### Step 3: Generate Gherkin Scenarios
+Analyze all flows and group them by functional area. Use your judgment to determine the grouping — there are no fixed rules on group count or group size. Consider:
 
-For each flow in `flows.json`, apply **test case design techniques** to expand it into **multiple scenarios**. A single flow is NOT a single test case — it is a user journey that must be tested from multiple angles.
+- Flows that test the same UI area or feature belong together
+- Flows that share the same starting state or action pattern may belong together
+- Context menu flows from different entry points can be grouped if the menu is the same
+- A group should be cohesive enough that you can reason about test expansion strategies within it
 
-#### 3.1 Test Case Expansion Strategies
+#### Step 1.3: Write the Plan
 
-For each flow, generate scenarios using these strategies:
+Write `e2e_output/features/_plan.json` with this structure:
 
-**Positive path (from the flow itself):**
-- The happy path as described in the flow
-
-**Negative / Error input:**
-- For every input field (TYPE action) in the flow, generate at least one error scenario:
-  - Invalid input (special characters, SQL injection strings, extremely long text)
-  - Empty input (submit without entering anything)
-- For every action that can fail, consider: what if the target element is missing or disabled?
-
-**Boundary conditions:**
-- For input fields: minimum length, maximum length, unicode/emoji, whitespace-only
-- For search: query that returns no results, query that returns exactly one result
-- For lists: empty list state, single item, many items
-
-**State-dependent scenarios:**
-- What if the precondition is different? (e.g., "add favorite" when the page is already favorited)
-- What if the user repeats the action? (e.g., pin favorites twice)
-
-**Keyboard shortcut scenarios:**
-- If any step in the flow has a `shortcut_alternative` field (e.g., `"shortcut_alternative": "Command+D"`), generate an additional scenario that uses the keyboard shortcut instead of the UI click to perform that action
-- The scenario should verify the same outcome as the original flow, but use `press "<shortcut>"` instead of `click`
-- Example: if the flow clicks "Add This Page to Favorites..." and the step has `"shortcut_alternative": "Command+D"`, generate a scenario like:
-  ```gherkin
-  @happy
-  Scenario: Add current page to favorites via keyboard shortcut
-    Given the Favorites panel is open in Edge
-    When I press "Command+D"
-    Then a "Favorite Added" confirmation dialog should appear
-  ```
-
-**Example expansion for a "Search favorites" flow:**
-
-The flow provides one path: enter search → exit search. But good test design expands to:
-1. Search with a valid query that matches existing favorites
-2. Search with a query that returns no results
-3. Search with special characters (e.g., `<script>`, `' OR 1=1`)
-4. Search with empty input (just press Enter)
-5. Exit search and verify the full list is restored
-
-#### 3.2 One Step = One Thing
-
-Each Given/When/Then step must express exactly ONE action or ONE verification.
-
-- NEVER: `Then a dialog should appear showing the page name and a folder selector` (two things)
-- CORRECT:
-  ```gherkin
-  Then a "Favorite Added" confirmation dialog should appear
-  And the dialog should show the current page name
-  And the folder selector should default to "Favorites bar"
-  ```
-
-### Step 4: Write .feature File
-
-Write all scenarios to `e2e_output/features/<feature_name>.feature`.
-
-Use section comments in the .feature file to mark flow groups:
-```gherkin
-  # ============================================================
-  # Group Name (flows 001, 028-032)
-  # ============================================================
+```json
+{
+  "app_name": "<from utg.json>",
+  "feature_name": "<inferred or user-specified>",
+  "groups": [
+    {
+      "group_name": "Human-readable group name",
+      "flow_ids": ["flow_001", "flow_003"],
+      "state_ids": ["s_045d1069", "s_1471d4fa", "s_6039215b"],
+      "design_notes": "Free-form notes on what test expansion strategies apply to this group. E.g.: 'Search flow needs error/boundary expansion for input field. The exit-search flow is a simple positive path.'"
+    }
+  ]
+}
 ```
 
-### Step 5: Group Flows and Update flows.json
+- `state_ids`: Collect ALL unique state IDs from the `path` arrays of the flows in this group. These are the states whose detail files will be read in Phase 2.
+- `design_notes`: Your reasoning about what types of scenarios to generate for this group. This serves as a prompt-to-self for Phase 2. Consider which test design techniques apply (positive, negative, boundary, state-dependent, shortcut, context-menu) based on the flow actions and assertions.
 
-After generating the .feature file:
+#### Step 1.4: Update flows.json
 
-1. For each flow in `flows.json`, assign a `group` field based on which section of the .feature file its scenarios belong to. The group name should match the comment headers in the .feature file.
-2. Write the updated flows back to `e2e_output/flows.json` (preserving all existing fields, just adding `group`).
+Add a `group` field to each flow in `flows.json` matching the `group_name` from the plan. Preserve all existing fields.
 
-### Step 6: Regenerate Report
+---
 
-Regenerate the HTML report with the new `--features` flag to include test cases:
+### Phase 2: Group-by-Group Generation
+
+**Goal:** For each group in `_plan.json`, read only the relevant state files and generate high-quality Gherkin scenarios.
+
+#### Step 2.0: Initialize Feature File
+
+Write the feature file header:
+
+```gherkin
+Feature: <feature_name>
+  As a user of <app_name>
+  I want to verify the core workflows
+  So that I can ensure the application works correctly
+```
+
+#### Step 2.1: Iterate Over Groups
+
+For each group in `_plan.json["groups"]`, sequentially:
+
+1. **Read state files:** For each state_id in the group's `state_ids`, read `e2e_output/states/<state_id>.json` to get `ui_tree` and `interactive_elements`
+2. **Re-read the flows** for this group from `flows.json` (just the flows matching `flow_ids`)
+3. **Review the design_notes** from the plan to recall the intended test strategy
+4. **Generate scenarios** for this group, applying the test case expansion strategies (see "Test Case Expansion Strategies" below)
+5. **Append** the generated scenarios to the `.feature` file, preceded by a group comment header:
+
+```gherkin
+
+  # ============================================================
+  # Group Name (flows 001, 003)
+  # ============================================================
+
+  @happy
+  Scenario: ...
+```
+
+**IMPORTANT:** After finishing each group, move on to the next group. Do not go back and modify previously generated groups. Each group is self-contained.
+
+---
+
+### Phase 3: Finalize
+
+1. Delete `e2e_output/features/_plan.json`
+2. Regenerate the HTML report:
 
 ```bash
 uv run --project e2e-coverage python3 e2e-coverage/scripts/report.py \
@@ -129,11 +134,48 @@ uv run --project e2e-coverage python3 e2e-coverage/scripts/report.py \
   -o e2e_output/report.html
 ```
 
-The report will now show:
-- Flow table with a "Group" column
-- A "Test Cases" section with collapsible groups
-- Each scenario with @happy/@error/@boundary tag badges
-- Expandable Given/When/Then steps for each scenario
+---
+
+## Test Case Expansion Strategies
+
+For each flow, apply **test case design techniques** to expand it into **multiple scenarios**. A single flow is NOT a single test case — it is a user journey that must be tested from multiple angles. Use your judgment to decide which strategies apply and how many scenarios to generate — there is no fixed number.
+
+### Positive path (from the flow itself)
+- The happy path as described in the flow
+
+### Negative / Error input
+- For every input field (TYPE action) in the flow, consider error scenarios:
+  - Invalid input (special characters, SQL injection strings, extremely long text)
+  - Empty input (submit without entering anything)
+- For every action that can fail, consider: what if the target element is missing or disabled?
+
+### Boundary conditions
+- For input fields: minimum length, maximum length, unicode/emoji, whitespace-only
+- For search: query that returns no results, query that returns exactly one result
+- For lists: empty list state, single item, many items
+
+### State-dependent scenarios
+- What if the precondition is different? (e.g., "add favorite" when the page is already favorited)
+- What if the user repeats the action? (e.g., pin favorites twice)
+
+### Keyboard shortcut scenarios
+- If `utg.json` has a `shortcuts` array, or any step in the flow has a `shortcut_alternative` field, generate an additional scenario that uses the keyboard shortcut instead of the UI click
+- The scenario should verify the same outcome but use `press "<shortcut>"` instead of `click`
+- Tag: `@shortcut`
+
+### Uncovered interactive elements in explored states
+- For every state that appears in the group's flows, read its `interactive_elements` list
+- Identify **all actionable elements** (buttons, menu items, checkboxes, dropdowns) that are contextually relevant to the state's purpose (ignore generic browser chrome like Back, Refresh, Address bar)
+- Cross-reference with the flows: if an element exists in the state but NO flow clicks/interacts with it, generate a scenario that exercises that element
+- Example: a dialog has "Cancel" and "Delete" buttons, but flows only cover "Cancel" → generate a scenario that clicks "Delete" and verifies the expected outcome
+- Example: a menu has 4 items but flows only cover 3 → generate a scenario for the missing menu item
+- For dialogs with multiple options (checkboxes, dropdowns), generate scenarios that exercise different combinations
+- Tag: same as the parent flow's tag (e.g., `@happy` for a missing happy-path action)
+
+### Right-click context menu scenarios
+- If a flow contains a `RIGHT_CLICK` action that leads to a context menu state, read the target state's `interactive_elements` to find all `MenuItem` elements in the menu
+- Generate a **separate scenario for each menu item**: right-click to open the menu, then click the menu item, and verify a reasonable outcome based on the menu item's label
+- Tag: `@context-menu`
 
 ---
 
@@ -158,13 +200,42 @@ Feature: <feature_name>
 ```
 
 **Tags:**
-- `@<category>`: one of `@happy`, `@error`, `@boundary` — based on what the scenario tests (NOT copied from flow.type — a happy flow can produce error/boundary scenarios through expansion)
+- `@happy`, `@error`, `@boundary` — based on what the scenario tests
+- `@shortcut` — scenario uses keyboard shortcut instead of UI click
+- `@context-menu` — scenario tests a right-click context menu item
+
+Tags are combinable: a shortcut scenario is also `@happy`, so use `@happy @shortcut`.
 
 ### Given (Precondition)
 
-- Derive from the **first state** in the flow's `path` array
-- Use the state's `window_title` to describe the starting point
-- Be specific: `Given the Favorites panel is open in Edge` not `Given the app is open`
+- **Every scenario MUST start with launching the app**: `Given I launch the Edge browser`
+- **Every precondition MUST be expressed as explicit, reproducible steps — NEVER as abstract state descriptions.** The tester must know exactly how to reach the starting state.
+- Use the UTG transitions to derive the navigation path from `start_state` to the flow's first state. Write each navigation action as a separate `And` step.
+- **NEVER** write vague preconditions like `And the Favorites panel is open` or `And the History full page is open`. Instead, write the exact actions:
+  ```gherkin
+  # BAD — abstract, tester doesn't know how to get there
+  Given I launch the Edge browser
+  And the Favorites panel is open
+
+  # GOOD — explicit steps to reach the state
+  Given I launch the Edge browser
+  And I press "Ctrl+H" to open the History sidebar
+  ```
+  ```gherkin
+  # BAD
+  Given I launch the Edge browser
+  And the History full page is open at "edge://history"
+
+  # GOOD
+  Given I launch the Edge browser
+  And I press "Command+Y" to open the History full page
+  ```
+- If a scenario's precondition requires multiple navigations (e.g., reaching a pinned sidebar state), chain all the steps:
+  ```gherkin
+  Given I launch the Edge browser
+  And I press "Ctrl+H" to open the History sidebar
+  And I click the "Pin history" button in the History sidebar toolbar
+  ```
 
 ### When/And (Action Steps)
 
@@ -188,8 +259,6 @@ For each step in `flow.steps` that has an `action`:
 - Focus on functional behavior, not UI styling
 
 ### Content Quality Rules
-
-These rules are adapted from the testCaseGenerator prompt and are critical for generating high-quality test cases:
 
 1. **Use concrete actions, not vague statements**
    - Use `When I navigate to "https://bing.com"` instead of `When I open a webpage`
@@ -216,13 +285,13 @@ These rules are adapted from the testCaseGenerator prompt and are critical for g
    - No: `Then the icon should change`
    - Yes: `Then the favorites panel should be pinned as a sidebar`
 
-5. **Ensure end-to-end completeness**
+6. **Ensure end-to-end completeness**
    - Copy to clipboard → must verify by pasting
    - Save/download → must verify file exists or content correct
    - Change setting → must verify it persists after reopen
    - Create/edit content → must verify changes are saved and displayed
 
-6. **Maximize automation compatibility**
+7. **Maximize automation compatibility**
    - Use element labels that match the app's accessibility tree (these come from ui_tree)
    - Use clear action verbs: click, type, drag, select, press
    - Make verification steps objectively testable
@@ -250,20 +319,23 @@ This ONE flow should expand to MULTIPLE scenarios:
 ```gherkin
 @happy
 Scenario: Search favorites with a matching keyword
-  Given the Favorites panel is open in Edge
+  Given I launch the Edge browser
+  And the Favorites panel is open
   When I click the "Search favorites" button in the Favorites toolbar
   And I type "GitHub" in the "Search favorites" input field
   Then the favorites list should show only items matching "GitHub"
 
 @happy
 Scenario: Exit search mode returns to full favorites list
-  Given the Favorites panel is in search mode
+  Given I launch the Edge browser
+  And the Favorites panel is in search mode
   When I click the "Exit search" button
   Then the Favorites panel should show the full favorites list
 
 @error
 Scenario: Search favorites with special characters
-  Given the Favorites panel is open in Edge
+  Given I launch the Edge browser
+  And the Favorites panel is open
   When I click the "Search favorites" button in the Favorites toolbar
   And I type "<script>alert(1)</script>" in the "Search favorites" input field
   Then the search should complete without errors
@@ -271,14 +343,16 @@ Scenario: Search favorites with special characters
 
 @boundary
 Scenario: Search favorites with no matching results
-  Given the Favorites panel is open in Edge
+  Given I launch the Edge browser
+  And the Favorites panel is open
   When I click the "Search favorites" button in the Favorites toolbar
   And I type "zzz_nonexistent_query" in the "Search favorites" input field
   Then the favorites list should show an empty state or "no results" message
 
 @boundary
 Scenario: Search favorites with empty input
-  Given the Favorites panel is open in Edge
+  Given I launch the Edge browser
+  And the Favorites panel is open
   When I click the "Search favorites" button in the Favorites toolbar
   And I type "" in the "Search favorites" input field
   Then the full favorites list should remain visible

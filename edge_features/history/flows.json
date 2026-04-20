@@ -1,0 +1,1381 @@
+[
+  {
+    "id": "flow_001",
+    "group": "Sidebar Navigation and Tabs",
+    "name": "Navigate History tabs and pin sidebar",
+    "flow_path": "History Panel → Click Recently Closed tab → View Recently Closed → Click All tab → Back to All Tab → Click Tabs From Other Devices → View Other Devices → Go back → Click Pin history → Panel is pinned",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(Recently Closed)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b3f75c9a",
+        "action": null,
+        "assertion": "Recently Closed tab is active and shows recently closed entries",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(All)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(Tabs From Other Devices)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_ac240a00",
+        "action": null,
+        "assertion": "Tabs From Other Devices tab is active with sign-in prompt",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(Pin history)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_48c40f22",
+        "action": null,
+        "assertion": "History sidebar is pinned to the side of the browser window",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_b3f75c9a",
+      "s_b3f75c9a",
+      "s_8bf4f23d",
+      "s_ac240a00",
+      "s_8bf4f23d",
+      "s_48c40f22"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_b3f75c9a"
+      ],
+      [
+        "s_8bf4f23d",
+        "s_b3f75c9a"
+      ],
+      [
+        "s_8bf4f23d",
+        "s_ac240a00"
+      ],
+      [
+        "s_8bf4f23d",
+        "s_48c40f22"
+      ]
+    ]
+  },
+  {
+    "id": "flow_002",
+    "group": "Full Page Navigation and Search",
+    "name": "Open History full page and use Filter By Date",
+    "flow_path": "History Panel → Click History title → History Full Page → Click Filter By Date → Date dropdown shown",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(History)",
+        "assertion": null,
+        "shortcut_alternative": "⌘Y"
+      },
+      {
+        "state": "s_8690b76a",
+        "action": "CLICK(Filter By Date)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_5fb5006b",
+        "action": null,
+        "assertion": "Filter By Date dropdown shows options: Date Range, Today, Yesterday, Last Week, Clear Filter",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_8690b76a",
+      "s_5fb5006b"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_8690b76a"
+      ],
+      [
+        "s_8690b76a",
+        "s_5fb5006b"
+      ]
+    ]
+  },
+  {
+    "id": "flow_003",
+    "group": "Full Page Navigation and Search",
+    "name": "Export Browsing Data from History full page",
+    "flow_path": "History Panel → Click History title → History Full Page → Click Export Browsing Data → Export dialog shown",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(History)",
+        "assertion": null,
+        "shortcut_alternative": "⌘Y"
+      },
+      {
+        "state": "s_8690b76a",
+        "action": "CLICK(Export Browsing Data)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_2ed72dfd",
+        "action": null,
+        "assertion": "Export Browsing Data dialog shows with Cancel and Export buttons",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_8690b76a",
+      "s_2ed72dfd"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_8690b76a"
+      ],
+      [
+        "s_8690b76a",
+        "s_2ed72dfd"
+      ]
+    ]
+  },
+  {
+    "id": "flow_004",
+    "group": "Full Page Navigation and Search",
+    "name": "Search history on full page",
+    "flow_path": "History Panel → Click History title → History Full Page → Type in Search history → Search results shown",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(History)",
+        "assertion": null,
+        "shortcut_alternative": "⌘Y"
+      },
+      {
+        "state": "s_8690b76a",
+        "action": "TYPE(Search history)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_6039215b",
+        "action": null,
+        "assertion": "Search results are displayed with matching history entries highlighted",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_8690b76a",
+      "s_6039215b"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_8690b76a"
+      ],
+      [
+        "s_8690b76a",
+        "s_6039215b"
+      ]
+    ]
+  },
+  {
+    "id": "flow_005",
+    "group": "Sidebar Context Menu",
+    "name": "Right-click history entry and open in new tab",
+    "flow_path": "History Panel → Right-click entry → Context menu → Click Open in New Tab → Page opens in new tab",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "RIGHT_CLICK(E2E Coverage — Microsoft Edge, 2:32 AM, file:///Users/ljp-test-mac-mini/Proje...)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_3bbbace4",
+        "action": "CLICK(Open in New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bc771f66",
+        "action": null,
+        "assertion": "The history entry URL opens in a new background tab",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_3bbbace4",
+      "s_bc771f66"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_3bbbace4"
+      ],
+      [
+        "s_3bbbace4",
+        "s_bc771f66"
+      ]
+    ]
+  },
+  {
+    "id": "flow_006",
+    "group": "Sidebar Context Menu",
+    "name": "Right-click history entry and open in new window",
+    "flow_path": "History Panel → Right-click entry → Context menu → Click Open in New Window → Page opens in new window",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "RIGHT_CLICK(E2E Coverage — Microsoft Edge, 2:32 AM, file:///Users/ljp-test-mac-mini/Proje...)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_3bbbace4",
+        "action": "CLICK(Open in New Window)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_7069e62d",
+        "action": null,
+        "assertion": "The history entry URL opens in a separate new browser window",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_3bbbace4",
+      "s_7069e62d"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_3bbbace4"
+      ],
+      [
+        "s_3bbbace4",
+        "s_7069e62d"
+      ]
+    ]
+  },
+  {
+    "id": "flow_007",
+    "group": "Sidebar Context Menu",
+    "name": "Right-click history entry and open in InPrivate window",
+    "flow_path": "History Panel → Right-click entry → Context menu → Click Open in New InPrivate Window → Page opens in InPrivate",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "RIGHT_CLICK(E2E Coverage — Microsoft Edge, 2:32 AM, file:///Users/ljp-test-mac-mini/Proje...)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_3bbbace4",
+        "action": "CLICK(Open in New InPrivate Window)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_0e21bfda",
+        "action": null,
+        "assertion": "The history entry URL opens in a new InPrivate browsing window",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_3bbbace4",
+      "s_0e21bfda"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_3bbbace4"
+      ],
+      [
+        "s_3bbbace4",
+        "s_0e21bfda"
+      ]
+    ]
+  },
+  {
+    "id": "flow_008",
+    "group": "Sidebar Context Menu",
+    "name": "Right-click history entry and copy link",
+    "flow_path": "History Panel → Right-click entry → Context menu → Click Copy Link → Link copied to clipboard",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "RIGHT_CLICK(E2E Coverage — Microsoft Edge, 2:32 AM, file:///Users/ljp-test-mac-mini/Proje...)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_3bbbace4",
+        "action": "CLICK(Copy Link)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bc771f66",
+        "action": null,
+        "assertion": "The URL of the history entry is copied to the clipboard",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_3bbbace4",
+      "s_bc771f66"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_3bbbace4"
+      ],
+      [
+        "s_3bbbace4",
+        "s_bc771f66"
+      ]
+    ]
+  },
+  {
+    "id": "flow_009",
+    "group": "Sidebar Context Menu",
+    "name": "Right-click history entry and delete with cancel",
+    "flow_path": "History Panel → Right-click entry → Context menu → Click Delete → Confirmation dialog → Click Cancel → Entry not deleted",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "RIGHT_CLICK(E2E Coverage — Microsoft Edge, 2:32 AM, file:///Users/ljp-test-mac-mini/Proje...)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_3bbbace4",
+        "action": "CLICK(Delete)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b6d1bbcb",
+        "action": "CLICK(Cancel)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b3f75c9a",
+        "action": null,
+        "assertion": "Delete is cancelled and the history entry remains in the list",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_3bbbace4",
+      "s_b6d1bbcb",
+      "s_b3f75c9a"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_3bbbace4"
+      ],
+      [
+        "s_3bbbace4",
+        "s_b6d1bbcb"
+      ],
+      [
+        "s_b6d1bbcb",
+        "s_b3f75c9a"
+      ]
+    ]
+  },
+  {
+    "id": "flow_010",
+    "group": "Sidebar Context Menu",
+    "name": "Right-click history entry and filter by same site",
+    "flow_path": "History Panel → Right-click entry → Context menu → Click More from the Same Site → Filtered list shown",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "RIGHT_CLICK(E2E Coverage — Microsoft Edge, 2:32 AM, file:///Users/ljp-test-mac-mini/Proje...)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_3bbbace4",
+        "action": "CLICK(More from the Same Site)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_7103e59b",
+        "action": null,
+        "assertion": "History panel shows only entries from the same domain with a Clear search button",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_3bbbace4",
+      "s_7103e59b"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_3bbbace4"
+      ],
+      [
+        "s_3bbbace4",
+        "s_7103e59b"
+      ]
+    ]
+  },
+  {
+    "id": "flow_011",
+    "group": "Delete Browsing Data",
+    "name": "Delete Browsing Data from sidebar",
+    "flow_path": "History Panel → Click Delete Browsing Data → Settings page opens",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(Delete Browsing Data)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b298df01",
+        "action": null,
+        "assertion": "Clear browsing data settings page opens in browser",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_b298df01"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_b298df01"
+      ]
+    ]
+  },
+  {
+    "id": "flow_012",
+    "group": "Sidebar Navigation and Tabs",
+    "name": "Click date group header to navigate",
+    "flow_path": "History Panel → Click Today group header → GitHub page opens",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(Today - Friday, April 17, 2026)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_ff0fd3c3",
+        "action": null,
+        "assertion": "Clicked entry opens in the browser",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_ff0fd3c3"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_ff0fd3c3"
+      ]
+    ]
+  },
+  {
+    "id": "flow_013",
+    "group": "Sidebar More Options Menu",
+    "name": "More options menu - Open History Page",
+    "flow_path": "History Panel → Click More options → Menu opens → Click Open History Page → Full History page shown",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(More options)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_aa512a5e",
+        "action": "CLICK(Open History Page)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_e158fd2f",
+        "action": null,
+        "assertion": "Full History page (edge://history) opens in the browser",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_aa512a5e",
+      "s_e158fd2f"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_aa512a5e"
+      ],
+      [
+        "s_aa512a5e",
+        "s_e158fd2f"
+      ]
+    ]
+  },
+  {
+    "id": "flow_014",
+    "group": "Sidebar More Options Menu",
+    "name": "More options menu - Hide History Button",
+    "flow_path": "History Panel → Click More options → Menu opens → Click Hide History Button from Toolbar → Button hidden",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(More options)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_aa512a5e",
+        "action": "CLICK(Hide History Button from Toolbar)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bc771f66",
+        "action": null,
+        "assertion": "History button is removed from the toolbar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_aa512a5e",
+      "s_bc771f66"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_aa512a5e"
+      ],
+      [
+        "s_aa512a5e",
+        "s_bc771f66"
+      ]
+    ]
+  },
+  {
+    "id": "flow_015",
+    "group": "Sidebar More Options Menu",
+    "name": "More options menu - Hide Duplicate Pages",
+    "flow_path": "History Panel → Click More options → Menu opens → Click Hide Duplicate Pages → Duplicates hidden",
+    "steps": [
+      {
+        "state": "s_8bf4f23d",
+        "action": "CLICK(More options)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_aa512a5e",
+        "action": "CLICK(Hide Duplicate Pages)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bc771f66",
+        "action": null,
+        "assertion": "Duplicate history entries are hidden from the list",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bf4f23d",
+      "s_aa512a5e",
+      "s_bc771f66"
+    ],
+    "edges": [
+      [
+        "s_8bf4f23d",
+        "s_aa512a5e"
+      ],
+      [
+        "s_aa512a5e",
+        "s_bc771f66"
+      ]
+    ]
+  },
+  {
+    "id": "flow_016",
+    "group": "Full Page Context Menu",
+    "name": "Full page: right-click entry and open in new tab",
+    "flow_path": "History Full Page → Right-click entry → Context menu → Click Open in New Tab → Opens in new tab",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "RIGHT_CLICK(Engineering Hub)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b8c0e458",
+        "action": "CLICK(Open in New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_7f4b9efb",
+        "action": null,
+        "assertion": "History entry opens in a new tab",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_b8c0e458",
+      "s_7f4b9efb"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_b8c0e458"
+      ],
+      [
+        "s_b8c0e458",
+        "s_7f4b9efb"
+      ]
+    ]
+  },
+  {
+    "id": "flow_017",
+    "group": "Full Page Context Menu",
+    "name": "Full page: right-click entry and copy link",
+    "flow_path": "History Full Page → Right-click entry → Context menu → Click Copy Link → Link copied",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "RIGHT_CLICK(Engineering Hub)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b8c0e458",
+        "action": "CLICK(Copy Link)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_1af4713c",
+        "action": null,
+        "assertion": "URL is copied to clipboard and clipboard notification appears",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_b8c0e458",
+      "s_1af4713c"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_b8c0e458"
+      ],
+      [
+        "s_b8c0e458",
+        "s_1af4713c"
+      ]
+    ]
+  },
+  {
+    "id": "flow_018",
+    "group": "Full Page Context Menu",
+    "name": "Full page: right-click entry and open in new window",
+    "flow_path": "History Full Page → Right-click entry → Context menu → Click Open in New Window → Opens in new window",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "RIGHT_CLICK(Engineering Hub)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b8c0e458",
+        "action": "CLICK(Open in New Window)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_1af4713c",
+        "action": null,
+        "assertion": "History entry opens in a separate new browser window",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_b8c0e458",
+      "s_1af4713c"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_b8c0e458"
+      ],
+      [
+        "s_b8c0e458",
+        "s_1af4713c"
+      ]
+    ]
+  },
+  {
+    "id": "flow_019",
+    "group": "Full Page Context Menu",
+    "name": "Full page: right-click entry and open in InPrivate",
+    "flow_path": "History Full Page → Right-click entry → Context menu → Click Open in New InPrivate Window → Opens InPrivate",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "RIGHT_CLICK(Engineering Hub)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b8c0e458",
+        "action": "CLICK(Open in New InPrivate Window)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_1af4713c",
+        "action": null,
+        "assertion": "History entry opens in a new InPrivate browsing window",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_b8c0e458",
+      "s_1af4713c"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_b8c0e458"
+      ],
+      [
+        "s_b8c0e458",
+        "s_1af4713c"
+      ]
+    ]
+  },
+  {
+    "id": "flow_020",
+    "group": "Full Page Context Menu",
+    "name": "Full page: right-click entry, delete with cancel",
+    "flow_path": "History Full Page → Right-click entry → Context menu → Click Delete → Confirmation → Cancel",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "RIGHT_CLICK(Engineering Hub)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b8c0e458",
+        "action": "CLICK(Delete)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_33905f63",
+        "action": null,
+        "assertion": "Delete confirmation dialog shows 'Delete these pages?' with Cancel and Delete buttons",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_33905f63",
+        "action": "CLICK(Cancel)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_1af4713c",
+        "action": null,
+        "assertion": "Delete is cancelled and entry remains in history list",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_b8c0e458",
+      "s_33905f63",
+      "s_33905f63",
+      "s_1af4713c"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_b8c0e458"
+      ],
+      [
+        "s_b8c0e458",
+        "s_33905f63"
+      ],
+      [
+        "s_33905f63",
+        "s_1af4713c"
+      ]
+    ]
+  },
+  {
+    "id": "flow_021",
+    "group": "Full Page Context Menu",
+    "name": "Full page: right-click entry and filter by same site",
+    "flow_path": "History Full Page → Right-click entry → Context menu → More from Same Site → Filtered view → Clear search",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "RIGHT_CLICK(Engineering Hub)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b8c0e458",
+        "action": "CLICK(More from the Same Site)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_1c471376",
+        "action": null,
+        "assertion": "Full page shows only entries from the same site with Clear search button",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_1c471376",
+        "action": "CLICK(Clear search)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_6c5c377f",
+        "action": null,
+        "assertion": "All history entries are shown again on full page",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_b8c0e458",
+      "s_1c471376",
+      "s_1c471376",
+      "s_6c5c377f"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_b8c0e458"
+      ],
+      [
+        "s_b8c0e458",
+        "s_1c471376"
+      ],
+      [
+        "s_1c471376",
+        "s_6c5c377f"
+      ]
+    ]
+  },
+  {
+    "id": "flow_022",
+    "group": "Delete Browsing Data",
+    "name": "Full page: Delete Browsing Data dialog",
+    "flow_path": "History Full Page → Click Delete Browsing Data → Delete dialog with checkboxes shown",
+    "steps": [
+      {
+        "state": "s_6c5c377f",
+        "action": "CLICK(Delete Browsing Data)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_41530969",
+        "action": null,
+        "assertion": "Delete browsing data dialog shows with Time range dropdown and checkboxes for Browsing history, Download history, Cookies, Cached images, Cancel and Clear now buttons",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_6c5c377f",
+      "s_41530969"
+    ],
+    "edges": [
+      [
+        "s_6c5c377f",
+        "s_41530969"
+      ]
+    ]
+  },
+  {
+    "id": "flow_023",
+    "group": "Full Page Filter By Date",
+    "name": "Full page: Filter By Date dropdown",
+    "flow_path": "History Full Page → Click Filter By Date → Dropdown with date options shown",
+    "steps": [
+      {
+        "state": "s_6c5c377f",
+        "action": "CLICK(Filter By Date)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_43b72eac",
+        "action": null,
+        "assertion": "Filter By Date dropdown shows Date Range, Today, Yesterday, Last Week, Clear Filter options",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_6c5c377f",
+      "s_43b72eac"
+    ],
+    "edges": [
+      [
+        "s_6c5c377f",
+        "s_43b72eac"
+      ]
+    ]
+  },
+  {
+    "id": "flow_024",
+    "group": "Full Page Recently Closed and Other Devices",
+    "name": "Full page: Recently Closed and Tabs From Other Devices sections",
+    "flow_path": "History Full Page → Click Recently Closed → View closed tabs → Click Tabs From Other Devices → View synced tabs",
+    "steps": [
+      {
+        "state": "s_6c5c377f",
+        "action": "CLICK(Recently Closed)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_825e6cdf",
+        "action": null,
+        "assertion": "Recently Closed section shows list of recently closed tabs and windows with search field",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_6c5c377f",
+        "action": "CLICK(Tabs From Other Devices)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_12b7a962",
+        "action": null,
+        "assertion": "Tabs From Other Devices section shows synced tabs from other devices with Actions dropdown and search field",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_6c5c377f",
+      "s_825e6cdf",
+      "s_6c5c377f",
+      "s_12b7a962"
+    ],
+    "edges": [
+      [
+        "s_6c5c377f",
+        "s_825e6cdf"
+      ],
+      [
+        "s_6c5c377f",
+        "s_12b7a962"
+      ]
+    ]
+  },
+  {
+    "id": "flow_025",
+    "group": "Sidebar Pin/Unpin/Close",
+    "name": "Pinned sidebar: unpin history",
+    "flow_path": "History Sidebar Pinned → Click Unpin history → Sidebar returns to overlay mode",
+    "steps": [
+      {
+        "state": "s_48c40f22",
+        "action": "CLICK(Unpin history)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_32eb1504",
+        "action": null,
+        "assertion": "History sidebar is unpinned and shows as an overlay panel",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_48c40f22",
+      "s_32eb1504"
+    ],
+    "edges": [
+      [
+        "s_48c40f22",
+        "s_32eb1504"
+      ]
+    ]
+  },
+  {
+    "id": "flow_026",
+    "group": "Sidebar Pin/Unpin/Close",
+    "name": "Pinned sidebar: close history",
+    "flow_path": "History Sidebar Pinned → Click Close history → Sidebar is closed",
+    "steps": [
+      {
+        "state": "s_48c40f22",
+        "action": "CLICK(Close history)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_29a108a0",
+        "action": null,
+        "assertion": "History sidebar is completely closed and browser page is shown without sidebar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_48c40f22",
+      "s_29a108a0"
+    ],
+    "edges": [
+      [
+        "s_48c40f22",
+        "s_29a108a0"
+      ]
+    ]
+  },
+  {
+    "id": "flow_027",
+    "group": "Full Page Filter By Date",
+    "name": "Full page: filter by Today",
+    "flow_path": "History Full Page → Filter By Date → Today → Shows today's entries",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "CLICK(Filter By Date)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_43b72eac",
+        "action": "CLICK(Today)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_23488ace",
+        "action": null,
+        "assertion": "History full page shows only today's entries with date header",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_43b72eac",
+      "s_23488ace"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_43b72eac"
+      ],
+      [
+        "s_43b72eac",
+        "s_23488ace"
+      ]
+    ]
+  },
+  {
+    "id": "flow_028",
+    "group": "Full Page Filter By Date",
+    "name": "Full page: filter by Date Range with cancel",
+    "flow_path": "History Full Page → Filter By Date → Date Range → Date picker shown → Cancel",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "CLICK(Filter By Date)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_43b72eac",
+        "action": "CLICK(Date Range)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_cf26e2ad",
+        "action": null,
+        "assertion": "Date Range picker shows with Start Time, End Time fields, Show date picker buttons, Cancel and Apply buttons",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_cf26e2ad",
+        "action": "CLICK(Cancel)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_23488ace",
+        "action": null,
+        "assertion": "Date range picker is dismissed and history list is shown",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_43b72eac",
+      "s_cf26e2ad",
+      "s_cf26e2ad",
+      "s_23488ace"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_43b72eac"
+      ],
+      [
+        "s_43b72eac",
+        "s_cf26e2ad"
+      ],
+      [
+        "s_cf26e2ad",
+        "s_23488ace"
+      ]
+    ]
+  },
+  {
+    "id": "flow_029",
+    "group": "Full Page Export Browsing Data",
+    "name": "Full page: Export Browsing Data with cancel",
+    "flow_path": "History Full Page → Click Export Browsing Data → Export dialog → Cancel",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "CLICK(Export Browsing Data)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_e74bd41f",
+        "action": null,
+        "assertion": "Export Browsing Data dialog shows with privacy warning, Cancel and Export buttons",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_e74bd41f",
+        "action": "CLICK(Cancel)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_23488ace",
+        "action": null,
+        "assertion": "Export dialog is dismissed and history list is shown",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_e74bd41f",
+      "s_e74bd41f",
+      "s_23488ace"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_e74bd41f"
+      ],
+      [
+        "s_e74bd41f",
+        "s_23488ace"
+      ]
+    ]
+  },
+  {
+    "id": "flow_030",
+    "group": "Full Page Navigation and Search",
+    "name": "Full page: search history and clear search",
+    "flow_path": "History Full Page → Type in Search → Results shown → Clear search → All entries shown",
+    "steps": [
+      {
+        "state": "s_8690b76a",
+        "action": "TYPE(Search history, github)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8a50e194",
+        "action": null,
+        "assertion": "Search results show matching history entries containing 'github'",
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8a50e194",
+        "action": "CLICK(Clear search)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_23488ace",
+        "action": null,
+        "assertion": "Search is cleared and all history entries are shown again",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8690b76a",
+      "s_8a50e194",
+      "s_8a50e194",
+      "s_23488ace"
+    ],
+    "edges": [
+      [
+        "s_8690b76a",
+        "s_8a50e194"
+      ],
+      [
+        "s_8a50e194",
+        "s_23488ace"
+      ]
+    ]
+  },
+  {
+    "id": "flow_031",
+    "group": "Keyboard Shortcuts",
+    "name": "Shortcut: Ctrl+H opens History sidebar",
+    "flow_path": "Any page → Press Ctrl+H → History sidebar panel opens",
+    "steps": [
+      {
+        "state": "any",
+        "action": "SHORTCUT(Ctrl+H)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8bf4f23d",
+        "action": null,
+        "assertion": "History sidebar panel opens with All tab active showing browsing history",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "any",
+      "s_8bf4f23d"
+    ],
+    "edges": [
+      [
+        "any",
+        "s_8bf4f23d"
+      ]
+    ],
+    "shortcut_flow": true
+  },
+  {
+    "id": "flow_032",
+    "group": "Keyboard Shortcuts",
+    "name": "Shortcut: ⌘Y opens History full page",
+    "flow_path": "Any page → Press ⌘Y → History full page (edge://history) opens",
+    "steps": [
+      {
+        "state": "any",
+        "action": "SHORTCUT(⌘Y)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8690b76a",
+        "action": null,
+        "assertion": "History full page opens at edge://history showing all browsing history",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "any",
+      "s_8690b76a"
+    ],
+    "edges": [
+      [
+        "any",
+        "s_8690b76a"
+      ]
+    ],
+    "shortcut_flow": true
+  },
+  {
+    "id": "flow_033",
+    "group": "Keyboard Shortcuts",
+    "name": "Shortcut: ⇧⌘T opens Clear Browsing Data settings",
+    "flow_path": "Any page → Press ⇧⌘T → Clear Browsing Data settings page opens",
+    "steps": [
+      {
+        "state": "any",
+        "action": "SHORTCUT(⇧⌘T)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b298df01",
+        "action": null,
+        "assertion": "Clear browsing data settings page (edge://settings/privacy/clearBrowsingData) opens",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "any",
+      "s_b298df01"
+    ],
+    "edges": [
+      [
+        "any",
+        "s_b298df01"
+      ]
+    ],
+    "shortcut_flow": true
+  }
+]

@@ -39,6 +39,8 @@ SKIP_LABELS = {"Close", "Minimize", "Zoom", "FullScreen", ""}
 
 # Matches keyboard shortcuts like (⌘D), (⇧⌘N), (⌥⌘I), (⌃⇧⌘F)
 SHORTCUT_RE = re.compile(r'\s*\(([⌘⇧⌥⌃]+[A-Za-z0-9])\)\s*$')
+# Matches comma-separated shortcuts like ", ⇧⌘T" at end of label
+SHORTCUT_COMMA_RE = re.compile(r',\s*([⌘⇧⌥⌃]+[A-Za-z0-9])\s*$')
 
 # Types eligible for RIGHT_CLICK (likely to have context menus)
 RIGHT_CLICK_TYPES = {
@@ -48,17 +50,14 @@ RIGHT_CLICK_TYPES = {
     "XCUIElementTypeLink",
     "XCUIElementTypeImage",
     "XCUIElementTypeTextView",
-    "XCUIElementTypeButton",
-    "XCUIElementTypeTab",
     "XCUIElementTypeOutlineRow",
     "XCUIElementTypeTableRow",
 }
 
-# Types eligible for DRAG (list items, tabs, etc.)
+# Types eligible for DRAG (list items, etc.)
 DRAG_TYPES = {
     "XCUIElementTypeCell",
     "XCUIElementTypeRow",
-    "XCUIElementTypeTab",
     "XCUIElementTypeImage",
     "XCUIElementTypeOutlineRow",
     "XCUIElementTypeTableRow",
@@ -88,6 +87,8 @@ def parse_page_source(xml_str: str) -> dict:
 
     all_elements = []
     interactive_elements = []
+    interactive_xml_refs = []  # parallel list of XML element refs
+    seen_dedup = set()  # (type, label, x, y, width, height)
 
     for elem in root.iter():
         tag = elem.tag
@@ -122,7 +123,21 @@ def parse_page_source(xml_str: str) -> dict:
             and int(height) > 0
         )
         if is_interactive:
+            dedup_key = (tag, label, int(x), int(y), int(width), int(height))
+            if dedup_key in seen_dedup:
+                continue
+            seen_dedup.add(dedup_key)
             interactive_elements.append(el)
+            interactive_xml_refs.append(elem)
+
+    # Compute has_children: does this element's XML subtree contain other interactive elements?
+    interactive_xml_set = set(interactive_xml_refs)
+    for i, xml_elem in enumerate(interactive_xml_refs):
+        has_child = any(
+            desc in interactive_xml_set and desc is not xml_elem
+            for desc in xml_elem.iter()
+        )
+        interactive_elements[i]["has_children"] = has_child
 
     return {
         "all_elements_count": len(all_elements),
@@ -130,11 +145,64 @@ def parse_page_source(xml_str: str) -> dict:
     }
 
 
+def detect_list_groups(elements: list[dict]) -> list[list[tuple[int, dict]]]:
+    """Detect groups of list-like elements based on spatial layout.
+
+    Criteria: same type, same x (±10px via x//20 bucketing),
+    consecutive y (gap ≤ 50px), ≥ 3 elements in the group.
+
+    Returns list of groups, where each group is [(index, element), ...].
+    """
+    if not elements:
+        return []
+
+    # Group by (type, x bucket)
+    buckets: dict[tuple[str, int], list[tuple[int, dict]]] = {}
+    for i, e in enumerate(elements):
+        key = (e.get("type", ""), e.get("x", 0) // 20)
+        buckets.setdefault(key, []).append((i, e))
+
+    groups = []
+    for _key, items in buckets.items():
+        if len(items) < 3:
+            continue
+        items.sort(key=lambda x: x[1].get("y", 0))
+
+        current = [items[0]]
+        for j in range(1, len(items)):
+            prev_y = items[j - 1][1].get("y", 0)
+            curr_y = items[j][1].get("y", 0)
+            if curr_y - prev_y <= 50:
+                current.append(items[j])
+            else:
+                if len(current) >= 3:
+                    groups.append(current)
+                current = [items[j]]
+        if len(current) >= 3:
+            groups.append(current)
+
+    return groups
+
+
 def compute_state_hash(interactive_elements: list[dict]) -> str:
-    sigs = sorted(
-        f"{e['type']}|{e['label']}|{e['enabled']}"
-        for e in interactive_elements
-    )
+    # Detect list groups and aggregate their signatures so that
+    # adding/removing list items doesn't change the hash.
+    groups = detect_list_groups(interactive_elements)
+    list_indices: set[int] = set()
+    group_sigs = []
+    for group in groups:
+        for i, _ in group:
+            list_indices.add(i)
+        etype = group[0][1]["type"]
+        x_bin = group[0][1].get("x", 0) // 20
+        group_sigs.append(f"{etype}|__LIST__|x{x_bin}")
+
+    sigs = []
+    for i, e in enumerate(interactive_elements):
+        if i not in list_indices:
+            sigs.append(f"{e['type']}|{e['label']}|{e['enabled']}")
+    sigs.extend(group_sigs)
+    sigs.sort()
     content = "||".join(sigs)
     return hashlib.md5(content.encode()).hexdigest()[:12]
 
@@ -283,10 +351,14 @@ def normalize(xml_str: str) -> dict:
             "x": e["x"], "y": e["y"],
             "width": e["width"], "height": e["height"],
         }
+        if e.get("has_children"):
+            entry["has_children"] = True
         m = SHORTCUT_RE.search(label)
+        if not m:
+            m = SHORTCUT_COMMA_RE.search(label)
         if m:
             shortcut = m.group(1)
-            clean_label = SHORTCUT_RE.sub("", label).strip()
+            clean_label = m.re.sub("", label).strip()
             shortcuts.append({
                 "shortcut": shortcut,
                 "label": clean_label,

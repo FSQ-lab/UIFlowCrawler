@@ -22,6 +22,8 @@ e2e_output/
 ├── states/
 │   ├── s_xxx.png        # screenshot per discovered state
 │   └── s_xxx.json       # per-state detail (elements + ui_tree)
+├── blacklist.json       # global element blacklist (substring matching)
+├── shortcuts_raw.json   # raw shortcuts discovered during exploration (auto + manual)
 ├── crawler_state.json   # exploration progress (lightweight, resumable)
 ├── utg.json             # final state transition graph (lightweight summary)
 ├── flows.json           # LLM-designed test flows
@@ -39,6 +41,14 @@ e2e_output/
 
 ---
 
+## Key Rules
+
+**MCP `page_source_file` parameter:** Every MCP tool call that returns page_source (actions like `click_element`, `press_key`, `get_page_source_tree`, etc.) MUST include `page_source_file=<absolute_path_to>/e2e_output/page_source_tmp.xml`. This tells the MCP server to save the XML directly to disk and return only a short confirmation, instead of dumping 50KB+ XML into your context. When you need to read the UI content (e.g., scope decisions, navigation checks), use the `Read` tool on the saved file.
+
+**Follow the advisor faithfully:** The advisor algorithm tracks exploration completeness. Always explore elements in the exact order the advisor provides. Do NOT skip elements, re-order, or try to "optimize" the exploration. Execute each element, record the result, and move on. The advisor handles prioritization — trust it.
+
+---
+
 ## Execution Flow
 
 ### Phase 0: Feature Scoping (LLM — only if user specified a feature scope)
@@ -47,16 +57,14 @@ If the user specified a feature scope (e.g. "Copilot功能"), you must navigate 
 
 1. **Launch the app** via MCP `app_launch`
 2. **Navigate to the feature**: identify the entry point from the page_source (returned by MCP tools) and click it to reach the feature's main UI state. This state becomes the starting point for the advisor.
-3. **Skip non-target elements on the initial state**: After `init` in Phase 1, use `advisor skip` to mark elements on the initial state (s0) that are clearly outside the target feature scope. Rules:
-   - **Skip granularity is the element, not the action type.** If an element belongs to the target feature, ALL of its eligible actions (CLICK, RIGHT_CLICK, DRAG, TYPE) must be explored — do not selectively skip a specific action type on an in-scope element (e.g. do not skip RIGHT_CLICK on a Favorites button just because "right-click seems unimportant").
-   - Only skip elements whose identity is unambiguously outside the feature scope (e.g. "browser address bar", "Copilot button", "Profile menu"). Give each a clear reason.
-   - `advisor skip` is ONLY for Phase 0 on the initial state. During Phase 1 exploration, never call `advisor skip` — every element the advisor recommends must be executed via MCP and recorded via `advisor record`.
-4. **Persist the exploration context** to survive context compression:
+3. **Persist the exploration context** to survive context compression:
    ```
    Write to e2e_output/exploration_context.txt:
    App: <app_name>
    Feature: <user's feature description in original language>
+   Scope: <brief description of what's in/out of scope>
    Entry points: <list of entry point elements you identified>
+   Navigation shortcuts: <list of shortcuts used to reach the feature, e.g. "⌘Y opens History panel">
    ```
 
 If no feature scope is specified, skip this phase — explore the entire app starting from the initial state. Still write `exploration_context.txt` with just the app name.
@@ -83,18 +91,24 @@ Read `e2e-coverage/conf/appium_mac.json` and set `bundleId` to the user's value.
 $ADVISOR status --output-dir e2e_output
 ```
 
-- If this returns valid status (not error), **resume** — log the summary (coverage_pct, unexplored_elements) and skip to Step 3. Launch the app via MCP `app_launch` before continuing.
+- If this returns valid status (not error), **resume** — skip to Step 3. Launch the app via MCP `app_launch` before continuing.
 - If no state exists, **start fresh**:
 
 1. Call MCP tool `app_launch` with `caller=e2e-coverage`, `scenario=exploration`
-2. Call MCP tool `get_page_source_tree` to get the initial page_source XML
-3. Save the XML to `e2e_output/page_source_tmp.xml`
-4. Call advisor to initialize (provide a descriptive `--window-title` based on the page_source content):
+2. Call MCP tool `get_page_source_tree` with `page_source_file=e2e_output/page_source_tmp.xml` (absolute path) to save the initial page_source XML directly to disk
+3. Call advisor to initialize:
 ```bash
-$ADVISOR init --page-source e2e_output/page_source_tmp.xml --app-name "<app_name>" --window-title "<descriptive UI state name>" --output-dir e2e_output
+$ADVISOR init --page-source e2e_output/page_source_tmp.xml --app-name "<app_name>" --output-dir e2e_output
 ```
-5. Read the JSON output — it contains `start_state`, `interactive_elements`. The advisor also creates `states/<state_id>.json` with full element details + ui_tree.
-6. Take a screenshot: call MCP `take_screenshot` with `save_path=e2e_output/states/<state_id>.png`
+4. Read the JSON output — it contains `start_state`, `interactive_elements`. The advisor also creates `states/<state_id>.json` with full element details + ui_tree.
+5. Take a screenshot: call MCP `take_screenshot` with `save_path=e2e_output/states/<state_id>.png`
+6. **Blacklist non-target elements** (only if feature scope is set): add elements that are clearly outside the target feature scope to the global blacklist. The blacklist uses **substring matching**, applies to **all states** automatically, and filters out **all action types** for matched elements.
+   ```bash
+   $ADVISOR blacklist --output-dir e2e_output --labels "Address and search bar,Copilot,Profile,Chat"
+   ```
+   - Only blacklist elements whose identity is unambiguously outside the feature scope. When in doubt, leave it in.
+   - Substring matching means "Copilot" will match both "Copilot menu" and "Chat with Copilot".
+   - Stored in `blacklist.json`, persists across explorations.
 
 #### Step 3: Exploration Loop
 
@@ -111,7 +125,6 @@ The response contains:
   "status": "continue",
   "target_state": "s_abc123",
   "target_hash": "abc123def456",
-  "window_title": "Calculator",
   "navigate_path": [...],
   "elements": [
     {
@@ -136,23 +149,18 @@ If `status` is `"done"`, go to **Phase 1.5** (Validate Exploration).
 
 **3b. Navigate to target state (if not already there):**
 
-Get current page_source and check if you're at the target state. If not:
-1. Try pressing Escape (call MCP `press_key` with key=`escape`), wait 1s, check page_source
-2. Try Escape again
-3. If still wrong state: close app (MCP `app_close`), relaunch (MCP `app_launch`), then follow `navigate_path` from the advisor response — each step has `action`, `label`, `from_state`
+Every MCP action returns `page_source_summary` — use it to judge whether you're at the target state. If not, restore by reversing your previous actions (e.g. Escape to dismiss a dialog, click the toolbar button that opened a panel), or follow `navigate_path` from the advisor. App restart is a last resort.
 
 **3c. For EACH element in the advisor's list:**
 
-1. **Execute action** (the MCP tool response includes the updated page_source):
-   - If `action_type` is `CLICK`: call MCP `click_element` with `locator_value=<label>`
-   - If `action_type` is `TYPE`: call MCP `click_element` first to focus, wait 0.5s, then call MCP `send_keys_on_macos` with `locator_value=<label>` and a **semantically appropriate text** based on the label (e.g. "john@example.com" for an email field, "hello world" for a search box — use your judgment)
-   - If `action_type` is `RIGHT_CLICK`: call MCP `right_click_element` with `locator_value=<label>`. This tests whether the element has a context menu.
-   - If `action_type` is `DRAG`: use your judgment to pick a meaningful drag target — drag to a sibling element (reorder in a list), or to a different container (e.g. file into folder). Call MCP `drag_element_to_element` with `source_xpath` and `target_xpath`. Use the element labels and UI context to construct appropriate XPath locators.
+1. **Execute action** (remember: `page_source_file` is set on every MCP call per Key Rules):
+   - `CLICK`: call MCP `click_element` with `locator_value=<label>`
+   - `TYPE`: call MCP `click_element` first to focus, wait 0.5s, then call MCP `send_keys_on_macos` with `locator_value=<label>` and a **semantically appropriate text** based on the label (e.g. "john@example.com" for an email field, "hello world" for a search box — use your judgment)
+   - `RIGHT_CLICK`: call MCP `right_click_element` with `locator_value=<label>`. You must always execute it and record the result — whether a context menu exists is something you discover by trying, not by guessing.
+   - `DRAG`: use your judgment to pick a meaningful drag target. Call MCP `drag_element_to_element` with `source_xpath` and `target_xpath`. You must always execute it and record the result. If the drag has no visible effect, record it as `same_state`.
    - If `use_coordinates` is true: call MCP `tap_coordinates` with `x=tap_x`, `y=tap_y`
 
-2. **Save the page_source** from the action response to `e2e_output/page_source_tmp.xml`
-
-3. **Record with advisor:**
+2. **Record with advisor:**
    ```bash
    $ADVISOR record --output-dir e2e_output \
      --from-state <target_state> \
@@ -165,8 +173,8 @@ Get current page_source and check if you're at the target state. If not:
    If the element used coordinates, add: `--tap-x <x> --tap-y <y>`
    Always pass: `--max-depth <N>` (default 6, or user-specified)
 
-4. **Read the advisor's response:**
-   - `result: "new_state"` → **Boundary check (only if feature scope is set):** Judge whether this new state is still within the feature scope. Look at the page_source elements and window title — does this look like part of the target feature, or did we navigate away to an unrelated area?
+3. **Read the advisor's response:**
+   - `result: "new_state"` → **Boundary check (only if feature scope is set):** Judge whether this new state is still within the feature scope. Look at the page_source elements — does this look like part of the target feature, or did we navigate away to an unrelated area?
      - **In scope**: Take a screenshot: MCP `take_screenshot` with `save_path=e2e_output/states/<state_id>.png`. Log: "NEW state discovered: <state_id> (in scope)"
      - **Out of scope**: Re-record with `--out-of-scope` flag:
        ```bash
@@ -181,21 +189,11 @@ Get current page_source and check if you're at the target state. If not:
    - `result: "known_state"` → Log: "→ known state <state_id>"
    - `result: "same_state"` → Log: "→ no effect"
 
-5. **Restore to target state** before trying the next element (same strategy as 3b)
-   - If restore fails, record it:
+4. **Restore to target state** before trying the next element (same strategy as 3b). If restore fails after retries, record it:
      ```bash
      $ADVISOR restore-failure --output-dir e2e_output --target-state <state_id>
      ```
      Then break out of this element loop and go back to step 3a.
-
-**3d. Progress check:**
-
-After each full cycle (all elements in one state), check the advisor's summary in the response:
-- `coverage_pct` — percentage of elements explored
-- `states_discovered` — total states found
-- `unexplored_elements` — remaining
-
-Log a progress line: `[Progress] 73.5% coverage, 8 states, 12 unexplored elements remaining`
 
 #### LLM Enhancement Points
 
@@ -203,14 +201,8 @@ As the executor, you can apply intelligence that a pure algorithm cannot:
 
 1. **Smart text input**: When typing into fields, generate semantically relevant text based on the field label and context (e.g., URLs for URL fields, emails for email fields)
 2. **Error recovery**: If an MCP action fails or returns unexpected results, try alternative approaches (different click strategies, escape sequences)
-3. **State naming**: When a new state is discovered, you MUST provide a descriptive `--window-title` in the record command. This title appears on the report graph, so it must be meaningful. Rules:
-   - Describe the **UI state the user sees**, not the action that got there. Use noun phrases like "Settings Panel", "Search Results", "Login Dialog".
-   - Do NOT copy the raw window title bar text (e.g. "App Name - Profile 1"). Summarize what's on screen.
-   - Each title MUST be unique across all states. If two states look similar, differentiate by what changed (e.g. "Cart Empty" vs "Cart With Items"). The advisor will auto-append the triggering action as a fallback if you provide a duplicate title, but you should avoid duplicates proactively.
-   - Keep it short (2-4 words). Good: "Export Dialog", "Pin Sidebar", "Search Active". Bad: "The page after clicking the export button in the menu".
-4. **Unexpected dialogs**: If you encounter alert dialogs, permission prompts, or login walls that aren't part of the expected exploration, handle them intelligently (dismiss, accept, etc.) and record the transitions
-5. **Strict order**: Always explore elements in the exact order the advisor provides — do NOT re-order or skip any element
-6. **Directive compliance**: If the advisor's response contains a `directive` field, you MUST follow it. This is a hard constraint from the algorithm, not a suggestion.
+3. **Unexpected dialogs**: If you encounter alert dialogs, permission prompts, or login walls that aren't part of the expected exploration, handle them intelligently (dismiss, accept, etc.) and record the transitions
+5. **Directive compliance**: If the advisor's response contains a `directive` field, you MUST follow it. This is a hard constraint from the algorithm, not a suggestion.
 
 ### Phase 1.5: Validate Exploration (Sub-agent Evaluator)
 
@@ -266,7 +258,47 @@ If the Evaluator returns `verdict: "re-explore"`:
 2. Re-run Phase 1's exploration loop (Step 3) — the advisor will now recommend these elements
 3. After re-exploration, run Phase 1.5 again to confirm
 
-If the Evaluator returns `verdict: "pass"`, proceed to Phase 2.
+If the Evaluator returns `verdict: "pass"`, proceed to Phase 1.75.
+
+### Phase 1.75: Name States (Claude)
+
+After exploration is validated, give every state a meaningful title by reviewing its screenshot and context.
+
+For each state in `crawler_state.json`'s `state_titles`:
+
+1. Read the state's screenshot (`e2e_output/states/s_xxx.png`) and its JSON (`e2e_output/states/s_xxx.json`)
+2. Look at the transitions in `crawler_state.json` to understand how the user got to this state (what action triggered it, from which parent state)
+3. Assign a descriptive title that captures **what the user sees on screen**
+
+**Naming rules:**
+- Describe the visible UI state, not the action. Use noun phrases.
+- Be specific enough to distinguish similar states. Include key differentiators like "with dialog open", "after deletion", "search results shown".
+- Can be longer than typical (5-10 words is fine). Good: "History Full Page with Context Menu on Entry", "Pinned Sidebar After Deleting Entry". Bad: "State after click".
+- Each title MUST be unique across all states.
+- For out-of-scope or artifact states, prefix with `[OOS]` or `[Artifact]`.
+
+After naming, update `crawler_state.json`'s `state_titles` by running:
+
+```bash
+$ADVISOR rename-state --output-dir e2e_output --state <state_id> --title "<new title>"
+```
+
+#### Curate Shortcuts
+
+After naming all states, review and curate shortcuts for the final UTG:
+
+1. Read `e2e_output/shortcuts_raw.json` — this contains all shortcuts automatically discovered from element labels during exploration (e.g., buttons with `(⌘D)` in their label)
+2. Also check `exploration_context.txt`'s `Navigation shortcuts` line — these are shortcuts you noted during Phase 0 (e.g., `⌘Y opens History panel`)
+3. **Deduplicate** — remove duplicates (same shortcut key appearing from multiple states)
+4. **Judge scope** — only keep shortcuts that are relevant to the explored feature. Remove shortcuts that belong to unrelated UI elements (e.g., a Favorites shortcut `⌘D` when exploring History)
+5. Write the curated list into `e2e_output/utg.json`'s `shortcuts` array (the finalize step leaves this empty for you to fill)
+
+Each shortcut entry format:
+```json
+{"shortcut": "⌘Y", "label": "Show All History", "type": "XCUIElementTypeMenuItem", "source": "exploration_context"}
+```
+
+Then proceed to Phase 2.
 
 ### Phase 2: Design Flows (Claude)
 
@@ -286,7 +318,9 @@ $ADVISOR finalize --output-dir e2e_output
 - Only use states and transitions that exist in utg.json
 - Each flow MUST have a `flow_path` field: a natural language arrow chain describing the user journey, e.g. "Open sidebar → Click new chat → Enter new chat page"
 - No `description` field needed — `flow_path` replaces it
-- **Shortcuts**: Check `utg.json`'s `shortcuts` array. If a step's action matches a discovered shortcut, add `"shortcut_alternative": "<key>"` to that step. This tells downstream case generators that the action can also be triggered via keyboard shortcut.
+- **Shortcuts** (MUST do — do not skip):
+  1. Read `utg.json`'s `shortcuts` array (curated in Phase 1.75). For each shortcut, find flow steps whose action targets the same element (match by label). Set `shortcut_alternative` to the shortcut key on those steps.
+  2. After writing flows.json, verify: count how many non-null `shortcut_alternative` values exist. If zero and `utg.json` has shortcuts, you missed something — go back and fix.
 
 **Write `e2e_output/flows.json`:**
 
@@ -342,21 +376,20 @@ advisor.py next --output-dir <dir> [--max-actions 500] [--max-states 50]
 advisor.py record --output-dir <dir> --from-state <id> --action <desc> \
   --effective-key <key> --action-type <CLICK|TYPE|RIGHT_CLICK|DRAG> \
   --page-source <xml_file> [--label <label>] \
-  [--window-title <title>] [--tap-x <x> --tap-y <y>] [--out-of-scope] [--max-depth 6]
+  [--tap-x <x> --tap-y <y>] [--out-of-scope] [--max-depth 6]
 
-# Skip a SINGLE out-of-scope element (requires reason, stored separately for audit)
-advisor.py skip --output-dir <dir> --state <id> --effective-key <key> \
-  --action-type <CLICK|TYPE|RIGHT_CLICK|DRAG> --reason "<why>"
-
-# Reverse a skip — re-enable element for exploration (used by Phase 1.5 Evaluator)
-advisor.py unskip --output-dir <dir> --state <id> --effective-key <key> [--action-type <type>]
+# Add labels to global blacklist (substring matching, applies to all states)
+advisor.py blacklist --output-dir <dir> --labels "label1,label2,label3"
 
 # Record restore failure
 advisor.py restore-failure --output-dir <dir> --target-state <id> [--max-failures 3]
 
-# Check progress
+# Check progress (for debugging, not used during normal exploration)
 advisor.py status --output-dir <dir>
 
 # Generate utg.json
 advisor.py finalize --output-dir <dir>
+
+# Rename a state's title (used in Phase 1.75)
+advisor.py rename-state --output-dir <dir> --state <state_id> --title "<descriptive title>"
 ```

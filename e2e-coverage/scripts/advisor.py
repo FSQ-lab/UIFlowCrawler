@@ -39,7 +39,7 @@ import sys
 import time
 from pathlib import Path
 
-from normalize import normalize
+from normalize import normalize, detect_list_groups
 
 
 # ── State persistence ──────────────────────────────────────────
@@ -58,6 +58,33 @@ def save_state(output_dir: Path, state: dict):
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "crawler_state.json"
     path.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def load_blacklist(output_dir: Path) -> list[str]:
+    """Load blacklist from e2e_output/blacklist.json."""
+    path = output_dir / "blacklist.json"
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return []
+
+
+def save_blacklist(output_dir: Path, blacklist: list[str]):
+    """Save blacklist to e2e_output/blacklist.json."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    path = output_dir / "blacklist.json"
+
+
+def append_shortcuts_raw(output_dir: Path, shortcuts: list[dict], source_state: str):
+    """Append discovered shortcuts to shortcuts_raw.json."""
+    if not shortcuts:
+        return
+    path = output_dir / "shortcuts_raw.json"
+    existing = []
+    if path.exists():
+        existing = json.loads(path.read_text(encoding="utf-8"))
+    for sc in shortcuts:
+        existing.append({**sc, "source_state": source_state})
+    path.write_text(json.dumps(existing, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def load_state_detail(output_dir: Path, state_id: str) -> dict:
@@ -82,8 +109,6 @@ def save_utg(output_dir: Path, state: dict):
 
     # Build lightweight states summary (no element details)
     states_summary = {}
-    all_shortcuts = []
-    seen_shortcuts = set()
     for sid in state.get("state_index", []):
         detail = load_state_detail(output_dir, sid)
         states_summary[sid] = {
@@ -91,11 +116,6 @@ def save_utg(output_dir: Path, state: dict):
             "interactive_elements_count": detail.get("interactive_elements_count", 0),
             "screenshot": detail.get("screenshot", f"states/{sid}.png"),
         }
-        for sc in detail.get("shortcuts", []):
-            key = sc["shortcut"]
-            if key not in seen_shortcuts:
-                seen_shortcuts.add(key)
-                all_shortcuts.append({**sc, "source_state": sid})
 
     # Deduplicate transitions for edges
     seen_edges = set()
@@ -112,7 +132,7 @@ def save_utg(output_dir: Path, state: dict):
         "states": states_summary,
         "transitions": state.get("transitions", []),
         "edges": edges,
-        "shortcuts": all_shortcuts,
+        "shortcuts": [],
         "stats": {
             "total_states": len(state.get("state_index", [])),
             "total_transitions": len(state.get("transitions", [])),
@@ -154,12 +174,71 @@ def _is_blacklisted(label: str, blacklist: list[str]) -> bool:
     return False
 
 
-def get_unexplored(state: dict, state_id: str, output_dir: Path) -> list[tuple[dict, str]]:
-    """Return unexplored (element, action_type) pairs for a given state.
+def _get_list_skip_keys(elements: list[dict]) -> set[str]:
+    """Return effective_keys of non-representative list group members.
 
-    Returns a list of (element_dict, action_type) tuples, sorted by priority:
-    CLICK/TYPE first, then RIGHT_CLICK, then DRAG.
-    Elements matching the global blacklist are excluded.
+    For each list group, keep only the first container (has_children=True)
+    and the first leaf (has_children=False) as representatives.
+    All other members' keys are returned for skipping.
+    """
+    groups = detect_list_groups(elements)
+    if not groups:
+        return set()
+
+    label_counts: dict[str, int] = {}
+    for e in elements:
+        k = element_key(e)
+        label_counts[k] = label_counts.get(k, 0) + 1
+
+    skip_keys: set[str] = set()
+    for group in groups:
+        containers = [(i, e) for i, e in group if e.get("has_children", False)]
+        leaves = [(i, e) for i, e in group if not e.get("has_children", False)]
+
+        rep_indices: set[int] = set()
+        if containers:
+            rep_indices.add(containers[0][0])
+        if leaves:
+            rep_indices.add(leaves[0][0])
+
+        for i, e in group:
+            if i not in rep_indices:
+                k = element_key(e)
+                if label_counts[k] > 1:
+                    k = element_key_with_coords(e)
+                skip_keys.add(k)
+
+    return skip_keys
+
+
+def _get_all_known_keys(state: dict, exclude_state: str, output_dir: Path) -> set[str]:
+    """Collect all element keys from all states except exclude_state."""
+    all_keys: set[str] = set()
+    for sid in state.get("state_index", []):
+        if sid == exclude_state:
+            continue
+        detail = load_state_detail(output_dir, sid)
+        if not detail:
+            continue
+        els = detail.get("interactive_elements", [])
+        for el in els:
+            k = element_key(el)
+            count = sum(1 for e2 in els if element_key(e2) == k)
+            if count > 1:
+                all_keys.add(element_key_with_coords(el))
+            else:
+                all_keys.add(k)
+    return all_keys
+
+
+def get_unexplored(state: dict, state_id: str, output_dir: Path) -> list[tuple[dict, str, bool]]:
+    """Return unexplored (element, action_type, is_native) triples for a given state.
+
+    Returns a list of (element_dict, action_type, is_native) tuples, sorted by:
+    1. Native elements first (elements unique to this state)
+    2. Then by action priority: CLICK/TYPE first, then RIGHT_CLICK, then DRAG.
+    Elements matching the global blacklist or non-representative list members
+    are excluded.
     """
     ACTION_PRIORITY = {"CLICK": 0, "TYPE": 0, "RIGHT_CLICK": 1, "DRAG": 2}
 
@@ -169,7 +248,11 @@ def get_unexplored(state: dict, state_id: str, output_dir: Path) -> list[tuple[d
 
     elements = detail.get("interactive_elements", [])
     explored = set(tuple(p) for p in state.get("explored_pairs", []))
-    blacklist = state.get("global_blacklist", [])
+    blacklist = load_blacklist(output_dir)
+    list_skip_keys = _get_list_skip_keys(elements)
+
+    # Compute which keys exist in other states (for native detection)
+    all_other_keys = _get_all_known_keys(state, state_id, output_dir)
 
     # Check for duplicate labels
     label_counts: dict[str, int] = {}
@@ -185,11 +268,15 @@ def get_unexplored(state: dict, state_id: str, output_dir: Path) -> list[tuple[d
         k = element_key(el)
         if label_counts[k] > 1:
             k = element_key_with_coords(el)
+        if k in list_skip_keys:
+            continue
+        is_native = k not in all_other_keys
         for action_type in el.get("eligible_actions", ["CLICK"]):
             if (state_id, k, action_type) not in explored:
-                unexplored.append((el, action_type))
+                unexplored.append((el, action_type, is_native))
 
-    unexplored.sort(key=lambda x: ACTION_PRIORITY.get(x[1], 99))
+    # Sort: native first, then by action priority
+    unexplored.sort(key=lambda x: (0 if x[2] else 1, ACTION_PRIORITY.get(x[1], 99)))
     return unexplored
 
 
@@ -206,7 +293,7 @@ def cmd_init(args):
     info = normalize(xml_str)
 
     s0_id = info["state_id"]
-    title = args.window_title or args.app_name
+    title = args.app_name
 
     # Save per-state detail file
     save_state_detail(output_dir, s0_id, {
@@ -215,10 +302,12 @@ def cmd_init(args):
         "window_title": title,
         "interactive_elements": info["interactive_elements"],
         "interactive_elements_count": info["interactive_elements_count"],
-        "shortcuts": info.get("shortcuts", []),
         "ui_tree": info.get("ui_tree"),
         "screenshot": f"states/{s0_id}.png",
     })
+
+    # Append any discovered shortcuts to raw file
+    append_shortcuts_raw(output_dir, info.get("shortcuts", []), s0_id)
 
     # Save lightweight crawler state
     state = {
@@ -265,7 +354,6 @@ def cmd_next(args):
         print(json.dumps({
             "status": "done",
             "reason": f"Reached max actions ({max_actions})",
-            "summary": _summary(state, output_dir),
         }))
         return
 
@@ -274,7 +362,6 @@ def cmd_next(args):
         print(json.dumps({
             "status": "done",
             "reason": f"Reached max states ({max_states})",
-            "summary": _summary(state, output_dir),
         }))
         return
 
@@ -307,7 +394,6 @@ def cmd_next(args):
         print(json.dumps({
             "status": "done",
             "reason": "All reachable states fully explored",
-            "summary": _summary(state, output_dir),
         }))
         return
 
@@ -316,7 +402,7 @@ def cmd_next(args):
 
     # Build elements list with action_type from unexplored pairs
     elements_with_actions = []
-    for el, action_type in best_unexplored:
+    for el, action_type, is_native in best_unexplored:
         label = el.get("label", "")
         ek = get_effective_key(el, detail.get("interactive_elements", []))
 
@@ -329,6 +415,7 @@ def cmd_next(args):
             "y": el.get("y", 0),
             "width": el.get("width", 0),
             "height": el.get("height", 0),
+            "is_native": is_native,
         }
         # If effective_key differs from label, need coordinate-based action
         if ek != label:
@@ -349,13 +436,10 @@ def cmd_next(args):
         "target_state": best_id,
         "target_hash": detail.get("state_hash"),
         "window_title": detail.get("window_title", ""),
-        "unexplored_count": total_elements_count,
         "batch_size": len(elements_with_actions),
-        "batch_total": total_elements_count,
         "total_elements": detail.get("interactive_elements_count", 0),
         "navigate_path": path,
         "elements": elements_with_actions,
-        "summary": _summary(state, output_dir),
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -400,12 +484,8 @@ def cmd_record(args):
         outcome = {"result": "known_state", "state_id": existing_id}
     else:
         # New state!
-        # Deduplicate window_title — append triggering action if title already used
-        title = args.window_title or f"State {new_id}"
-        existing_titles = set(state.get("state_titles", {}).values())
-        if title in existing_titles:
-            action_label = args.label or action
-            title = f"{title} ({action_label})"
+        # Deduplicate title — append triggering action if title already used
+        title = f"State {new_id}"
 
         # Save per-state detail file
         save_state_detail(output_dir, new_id, {
@@ -414,10 +494,12 @@ def cmd_record(args):
             "window_title": title,
             "interactive_elements": info["interactive_elements"],
             "interactive_elements_count": info["interactive_elements_count"],
-            "shortcuts": info.get("shortcuts", []),
             "ui_tree": info.get("ui_tree"),
             "screenshot": f"states/{new_id}.png",
         })
+
+        # Append any discovered shortcuts to raw file
+        append_shortcuts_raw(output_dir, info.get("shortcuts", []), new_id)
 
         # Update lightweight state index
         state.setdefault("state_index", []).append(new_id)
@@ -464,6 +546,63 @@ def cmd_record(args):
             "screenshot_path": f"states/{new_id}.png",
         }
 
+        # ── Aggressive dedup: only keep truly new elements ──────
+        # For each element in the new state, check if it already exists
+        # in ANY previously discovered state. If so, mark it as explored
+        # in the new state. Only elements appearing for the first time
+        # across all states remain unexplored.
+        if not out_of_scope and not too_deep:
+            new_elements = info["interactive_elements"]
+            new_keys = set()
+            for el in new_elements:
+                k = element_key(el)
+                count = sum(1 for e2 in new_elements if element_key(e2) == k)
+                if count > 1:
+                    new_keys.add(element_key_with_coords(el))
+                else:
+                    new_keys.add(k)
+
+            # Collect all element keys from all OTHER states
+            all_existing_keys: set[str] = set()
+            for sid in state.get("state_index", []):
+                if sid == new_id:
+                    continue
+                existing_detail = load_state_detail(output_dir, sid)
+                if not existing_detail:
+                    continue
+                existing_els = existing_detail.get("interactive_elements", [])
+                for el in existing_els:
+                    k = element_key(el)
+                    count = sum(1 for e2 in existing_els if element_key(e2) == k)
+                    if count > 1:
+                        all_existing_keys.add(element_key_with_coords(el))
+                    else:
+                        all_existing_keys.add(k)
+
+            # Mark shared elements as explored in the new state
+            shared_keys = new_keys & all_existing_keys
+            inherited = 0
+            if shared_keys:
+                explored_pairs = state.get("explored_pairs", [])
+                explored_set = set(tuple(p) for p in explored_pairs)
+                for el in new_elements:
+                    k = element_key(el)
+                    count = sum(1 for e2 in new_elements if element_key(e2) == k)
+                    if count > 1:
+                        k = element_key_with_coords(el)
+                    if k in shared_keys:
+                        for act in el.get("eligible_actions", ["CLICK"]):
+                            new_pair = (new_id, k, act)
+                            if new_pair not in explored_set:
+                                explored_pairs.append(list(new_pair))
+                                explored_set.add(new_pair)
+                                inherited += 1
+                state["explored_pairs"] = explored_pairs
+
+            truly_new = new_keys - all_existing_keys
+            outcome["inherited_explored"] = inherited
+            outcome["truly_new_elements"] = len(truly_new)
+
     # Mark explored (triple: state_id, effective_key, action_type)
     explored_pairs = state.get("explored_pairs", [])
     action_type = getattr(args, "action_type", "CLICK") or "CLICK"
@@ -478,7 +617,6 @@ def cmd_record(args):
         "status": "recorded",
         "action_count": state["action_count"],
         **outcome,
-        "summary": _summary(state, output_dir),
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -571,7 +709,6 @@ def cmd_skip(args):
         "key": key,
         "reason": reason,
         "total_skipped": len(skipped_pairs),
-        "summary": _summary(state, output_dir),
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -625,26 +762,20 @@ def cmd_unskip(args):
         "state": state_id,
         "key": key,
         "remaining_skipped": len(new_skipped),
-        "summary": _summary(state, output_dir),
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 def cmd_blacklist(args):
-    """Add labels to global blacklist. Blacklisted elements are filtered out
-    from all states (current and future) in get_unexplored() and _summary().
+    """Add labels to global blacklist (stored in blacklist.json).
 
-    Uses substring matching: if any blacklist entry is a substring of an
-    element's label, that element is excluded.
+    Blacklisted elements are filtered out from all states (current and future)
+    in get_unexplored() and _summary(). Uses substring matching.
     """
     output_dir = Path(args.output_dir)
-    state = load_state(output_dir)
-    if not state:
-        print(json.dumps({"status": "error", "message": "No crawler state found."}))
-        return
 
     new_labels = [l.strip() for l in args.labels.split(",") if l.strip()]
-    blacklist = state.get("global_blacklist", [])
+    blacklist = load_blacklist(output_dir)
 
     added = []
     for label in new_labels:
@@ -652,15 +783,13 @@ def cmd_blacklist(args):
             blacklist.append(label)
             added.append(label)
 
-    state["global_blacklist"] = blacklist
-    save_state(output_dir, state)
+    save_blacklist(output_dir, blacklist)
 
     result = {
         "status": "updated",
         "added": added,
         "total_blacklisted": len(blacklist),
         "global_blacklist": blacklist,
-        "summary": _summary(state, output_dir),
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -674,6 +803,86 @@ def cmd_status(args):
         return
 
     print(json.dumps({"status": "ok", **_summary(state, output_dir)}, indent=2, ensure_ascii=False))
+
+
+def cmd_verify_state(args):
+    """Verify that the current page_source matches the expected target state.
+
+    Compares the hash of the provided page_source against the stored hash of
+    the target state. Returns match=true if they match, or match=false with
+    information about what state was actually found.
+    """
+    output_dir = Path(args.output_dir)
+    state = load_state(output_dir)
+    if not state:
+        print(json.dumps({"status": "error", "message": "No crawler state found."}))
+        return
+
+    target_state = args.target_state
+
+    # Get the expected hash for the target state
+    target_hash = state.get("state_hashes", {}).get(target_state)
+    if not target_hash:
+        print(json.dumps({
+            "status": "error",
+            "message": f"Unknown target state: {target_state}",
+        }))
+        return
+
+    # Normalize current page_source and compute hash
+    xml_str = Path(args.page_source).read_text(encoding="utf-8")
+    info = normalize(xml_str)
+    actual_hash = info["state_hash"]
+
+    if actual_hash == target_hash:
+        print(json.dumps({
+            "match": True,
+            "state_id": target_state,
+        }))
+        return
+
+    # Not a match — check if it's a known state
+    actual_state_id = None
+    for sid, h in state.get("state_hashes", {}).items():
+        if h == actual_hash:
+            actual_state_id = sid
+            break
+
+    actual_title = ""
+    if actual_state_id:
+        actual_title = state.get("state_titles", {}).get(actual_state_id, "")
+
+    print(json.dumps({
+        "match": False,
+        "expected_state": target_state,
+        "expected_title": state.get("state_titles", {}).get(target_state, ""),
+        "actual_state": actual_state_id,
+        "actual_title": actual_title,
+        "known": actual_state_id is not None,
+    }))
+
+
+def cmd_rename_state(args):
+    """Rename a state's title in crawler_state.json and its detail file."""
+    output_dir = Path(args.output_dir)
+    state = load_state(output_dir)
+    state_id = args.state
+    titles = state.get("state_titles", {})
+    if state_id not in titles:
+        print(json.dumps({"error": f"State {state_id} not found in state_titles"}))
+        return
+    old_title = titles[state_id]
+    titles[state_id] = args.title
+    save_state(output_dir, state)
+
+    # Also update the per-state detail file
+    detail_path = output_dir / "states" / f"{state_id}.json"
+    if detail_path.exists():
+        detail = json.loads(detail_path.read_text(encoding="utf-8"))
+        detail["window_title"] = args.title
+        detail_path.write_text(json.dumps(detail, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    print(json.dumps({"renamed": state_id, "old_title": old_title, "new_title": args.title}))
 
 
 def cmd_finalize(args):
@@ -703,15 +912,20 @@ def _summary(state: dict, output_dir: Path) -> dict:
     depth_limited = set(state.get("depth_limited_states", []))
 
     total_unexplored = 0
+    total_native_unexplored = 0
     total_action_slots = 0
     per_state = {}
-    blacklist = state.get("global_blacklist", [])
+    blacklist = load_blacklist(output_dir)
 
     for sid in state_index:
         if sid in oos or sid in depth_limited:
             continue  # Don't count out-of-scope or depth-limited states
         detail = load_state_detail(output_dir, sid)
         elements = detail.get("interactive_elements", [])
+        list_skip_keys = _get_list_skip_keys(elements)
+
+        # Compute which keys exist in other states
+        all_other_keys = _get_all_known_keys(state, sid, output_dir)
 
         # Check for duplicate labels
         label_counts: dict[str, int] = {}
@@ -720,6 +934,7 @@ def _summary(state: dict, output_dir: Path) -> dict:
             label_counts[k] = label_counts.get(k, 0) + 1
 
         unexplored = 0
+        native_unexplored = 0
         state_slots = 0
         for el in elements:
             label = el.get("label", "")
@@ -728,17 +943,24 @@ def _summary(state: dict, output_dir: Path) -> dict:
             k = element_key(el)
             if label_counts[k] > 1:
                 k = element_key_with_coords(el)
+            if k in list_skip_keys:
+                continue
+            is_native = k not in all_other_keys
             for action_type in el.get("eligible_actions", ["CLICK"]):
                 state_slots += 1
                 if (sid, k, action_type) not in explored:
                     unexplored += 1
+                    if is_native:
+                        native_unexplored += 1
 
         total_action_slots += state_slots
         total_unexplored += unexplored
+        total_native_unexplored += native_unexplored
         if unexplored > 0:
             per_state[sid] = {
                 "window_title": detail.get("window_title", ""),
                 "unexplored": unexplored,
+                "native_unexplored": native_unexplored,
                 "total": state_slots,
             }
 
@@ -751,6 +973,7 @@ def _summary(state: dict, output_dir: Path) -> dict:
         "total_action_slots": total_action_slots,
         "explored_action_slots": explored_count,
         "unexplored_action_slots": total_unexplored,
+        "native_unexplored_slots": total_native_unexplored,
         "skipped_elements": len(state.get("skipped_pairs", [])),
         "coverage_pct": round(coverage, 1),
         "unreachable_states": len(state.get("unreachable", [])),
@@ -771,7 +994,6 @@ def main():
     p_init = sub.add_parser("init", help="Initialize exploration state")
     p_init.add_argument("--page-source", required=True, help="Path to initial page_source XML file")
     p_init.add_argument("--app-name", required=True, help="App display name")
-    p_init.add_argument("--window-title", default="", help="Descriptive title for initial state (defaults to app-name)")
     p_init.add_argument("--output-dir", default="e2e_output", help="Output directory")
 
     # next
@@ -789,7 +1011,6 @@ def main():
     p_rec.add_argument("--effective-key", required=True, help="Element effective key for tracking")
     p_rec.add_argument("--page-source", required=True, help="Path to resulting page_source XML file")
     p_rec.add_argument("--label", default="", help="Element label")
-    p_rec.add_argument("--window-title", default="", help="Window title for new states")
     p_rec.add_argument("--tap-x", type=int, default=None, help="Tap X coordinate (if coordinate-based)")
     p_rec.add_argument("--tap-y", type=int, default=None, help="Tap Y coordinate (if coordinate-based)")
     p_rec.add_argument("--out-of-scope", action="store_true", default=False,
@@ -832,9 +1053,20 @@ def main():
     p_stat = sub.add_parser("status", help="Show exploration progress")
     p_stat.add_argument("--output-dir", default="e2e_output", help="Output directory")
 
+    # verify-state
+    p_vs = sub.add_parser("verify-state", help="Verify current page matches expected state")
+    p_vs.add_argument("--output-dir", default="e2e_output", help="Output directory")
+    p_vs.add_argument("--target-state", required=True, help="Expected state ID")
+    p_vs.add_argument("--page-source", required=True, help="Path to current page_source XML file")
+
     # finalize
     p_fin = sub.add_parser("finalize", help="Generate utg.json from current state")
     p_fin.add_argument("--output-dir", default="e2e_output", help="Output directory")
+
+    p_rename = sub.add_parser("rename-state", help="Rename a state's title")
+    p_rename.add_argument("--output-dir", default="e2e_output", help="Output directory")
+    p_rename.add_argument("--state", required=True, help="State ID to rename")
+    p_rename.add_argument("--title", required=True, help="New descriptive title")
 
     args = parser.parse_args()
 
@@ -847,7 +1079,9 @@ def main():
         "unskip": cmd_unskip,
         "blacklist": cmd_blacklist,
         "status": cmd_status,
+        "verify-state": cmd_verify_state,
         "finalize": cmd_finalize,
+        "rename-state": cmd_rename_state,
     }
     handlers[args.command](args)
 
