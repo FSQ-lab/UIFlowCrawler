@@ -43,7 +43,9 @@ e2e_output/
 
 ## Key Rules
 
-**MCP `page_source_file` parameter:** Every MCP tool call that returns page_source (actions like `click_element`, `press_key`, `get_page_source_tree`, etc.) MUST include `page_source_file=<absolute_path_to>/e2e_output/page_source_tmp.xml`. This tells the MCP server to save the XML directly to disk and return only a short confirmation, instead of dumping 50KB+ XML into your context. When you need to read the UI content (e.g., scope decisions, navigation checks), use the `Read` tool on the saved file.
+**MCP `page_source_file` parameter:** Every MCP tool call that accepts `page_source_file` (including `app_launch`, `click_element`, `press_key`, `get_page_source_tree`, `right_click_element`, `tap_coordinates`, `send_keys_on_macos`, `drag_element_to_element`, `find_element`, `time_sleep`, etc.) MUST pass `page_source_file=<absolute_path_to>/e2e_output/page_source_tmp.xml`. This saves the XML to disk and keeps your context clean. When you need to read the UI content (e.g., scope decisions, navigation checks), use the `Read` tool on the saved file.
+
+**MCP `summary_only` parameter:** Most MCP action tools accept `summary_only=true`, which returns an agent-friendly summary instead of the full page source. Use this when you only need a quick status check (e.g., confirming navigation succeeded) and don't need the full XML for the advisor. When `summary_only=true`, `page_source_file` is still written if provided.
 
 **Follow the advisor faithfully:** The advisor algorithm tracks exploration completeness. Always explore elements in the exact order the advisor provides. Do NOT skip elements, re-order, or try to "optimize" the exploration. Execute each element, record the result, and move on. The advisor handles prioritization — trust it.
 
@@ -94,15 +96,14 @@ $ADVISOR status --output-dir e2e_output
 - If this returns valid status (not error), **resume** — skip to Step 3. Launch the app via MCP `app_launch` before continuing.
 - If no state exists, **start fresh**:
 
-1. Call MCP tool `app_launch` with `caller=e2e-coverage`, `scenario=exploration`
-2. Call MCP tool `get_page_source_tree` with `page_source_file=e2e_output/page_source_tmp.xml` (absolute path) to save the initial page_source XML directly to disk
-3. Call advisor to initialize:
+1. Call MCP tool `app_launch` with `caller=e2e-coverage`, `scenario=exploration`, `page_source_file=e2e_output/page_source_tmp.xml` (absolute path) — this launches the app and saves the initial page_source XML in one call
+2. Call advisor to initialize:
 ```bash
 $ADVISOR init --page-source e2e_output/page_source_tmp.xml --app-name "<app_name>" --output-dir e2e_output
 ```
-4. Read the JSON output — it contains `start_state`, `interactive_elements`. The advisor also creates `states/<state_id>.json` with full element details + ui_tree.
-5. Take a screenshot: call MCP `take_screenshot` with `save_path=e2e_output/states/<state_id>.png`
-6. **Blacklist non-target elements** (only if feature scope is set): add elements that are clearly outside the target feature scope to the global blacklist. The blacklist uses **substring matching**, applies to **all states** automatically, and filters out **all action types** for matched elements.
+3. Read the JSON output — it contains `start_state`, `interactive_elements`. The advisor also creates `states/<state_id>.json` with full element details + ui_tree.
+4. Take a screenshot: call MCP `take_screenshot` with `save_path=e2e_output/states/<state_id>.png`
+5. **Blacklist non-target elements** (only if feature scope is set): add elements that are clearly outside the target feature scope to the global blacklist. The blacklist uses **substring matching**, applies to **all states** automatically, and filters out **all action types** for matched elements.
    ```bash
    $ADVISOR blacklist --output-dir e2e_output --labels "Address and search bar,Copilot,Profile,Chat"
    ```
