@@ -9,13 +9,15 @@ Generate BDD Gherkin `.feature` files from the flows and state data produced by 
 
 **Trigger**: User says "generate test cases", "生成测试用例", "bdd", "/bdd-gen", or wants to convert flows to Gherkin format.
 
-## Input
+## Input (read-only — do NOT modify these files)
 
 | File | Purpose |
 |------|---------|
 | `e2e_output/flows.json` | Flow definitions (path, steps, assertions) |
-| `e2e_output/utg.json` | State graph overview (app_name, state titles) |
-| `e2e_output/states/s_xxx.json` | Per-state detail: `ui_tree` (element hierarchy) + `interactive_elements` (flat list with coordinates) |
+| `e2e_output/utg.json` | State graph (app_name, start_state, state titles, shortcuts, transitions) |
+| `e2e_output/states/s_xxx.json` | Per-state detail: `ui_tree` + `interactive_elements` |
+| `e2e_output/exploration_context.txt` | App name, feature scope, entry points, navigation shortcuts |
+| `e2e-coverage/kb/element_patterns.md` | UI element testing patterns knowledge base |
 
 ## Output
 
@@ -27,35 +29,22 @@ e2e_output/features/
 
 ---
 
-## Execution Flow — Two-Phase Generation
+## Phase 1: Macro Planning
 
-The generation process is split into two phases to avoid overloading the LLM context with too much information at once. Phase 1 does macro planning without reading state detail files. Phase 2 generates scenarios group by group, reading only the state files relevant to each group.
+**Goal:** Group flows by functionality and plan expansion strategy — WITHOUT reading state detail files.
 
-### Phase 1: Macro Planning
+### Step 1.1: Read High-Level Data
 
-**Goal:** Understand all flows at a high level, group them by functionality, and plan the test design strategy for each group — WITHOUT reading any state detail files.
-
-**Input:** Only `utg.json` and `flows.json`.
-
-#### Step 1.1: Read High-Level Data
-
-1. Read `e2e_output/utg.json` — get `app_name`, `start_state`, all state titles (window_title), and `shortcuts`
+1. Read `e2e_output/utg.json` — get `app_name`, `start_state`, state titles, `shortcuts`, `transitions`
 2. Read `e2e_output/flows.json` — get all flow definitions
+3. Read `e2e_output/exploration_context.txt` — get entry points and navigation shortcuts for reaching `start_state` from app launch
+4. Read `e2e-coverage/kb/element_patterns.md` — load the element testing patterns knowledge base
 
-**DO NOT read any `e2e_output/states/*.json` files in this phase.** State titles from utg.json provide enough context for grouping.
+**DO NOT read any `e2e_output/states/*.json` files in this phase.**
 
-#### Step 1.2: Group Flows by Functionality
+### Step 1.2: Group Flows & Write Plan
 
-Analyze all flows and group them by functional area. Use your judgment to determine the grouping — there are no fixed rules on group count or group size. Consider:
-
-- Flows that test the same UI area or feature belong together
-- Flows that share the same starting state or action pattern may belong together
-- Context menu flows from different entry points can be grouped if the menu is the same
-- A group should be cohesive enough that you can reason about test expansion strategies within it
-
-#### Step 1.3: Write the Plan
-
-Write `e2e_output/features/_plan.json` with this structure:
+Analyze all flows and group them by functional area, then write `e2e_output/features/_plan.json`:
 
 ```json
 {
@@ -65,29 +54,23 @@ Write `e2e_output/features/_plan.json` with this structure:
     {
       "group_name": "Human-readable group name",
       "flow_ids": ["flow_001", "flow_003"],
-      "state_ids": ["s_045d1069", "s_1471d4fa", "s_6039215b"],
-      "design_notes": "Free-form notes on what test expansion strategies apply to this group. E.g.: 'Search flow needs error/boundary expansion for input field. The exit-search flow is a simple positive path.'"
+      "state_ids": ["s_045d1069", "s_1471d4fa"],
+      "design_notes": "Free-form notes for Phase 2. What expansion strategies apply? Which element patterns from the knowledge base might be triggered?"
     }
   ]
 }
 ```
 
-- `state_ids`: Collect ALL unique state IDs from the `path` arrays of the flows in this group. These are the states whose detail files will be read in Phase 2.
-- `design_notes`: Your reasoning about what types of scenarios to generate for this group. This serves as a prompt-to-self for Phase 2. Consider which test design techniques apply (positive, negative, boundary, state-dependent, shortcut, context-menu) based on the flow actions and assertions.
-
-#### Step 1.4: Update flows.json
-
-Add a `group` field to each flow in `flows.json` matching the `group_name` from the plan. Preserve all existing fields.
+- `state_ids`: ALL unique state IDs from the `path` arrays of flows in this group
+- `design_notes`: Your prompt-to-self for Phase 2. Consider: positive paths, state-dependent scenarios, keyboard shortcuts, uncovered elements, and which knowledge base patterns (SearchField, Toggle, Dialog, etc.) might apply based on flow actions and state context
 
 ---
 
-### Phase 2: Group-by-Group Generation
+## Phase 2: Group-by-Group Generation
 
-**Goal:** For each group in `_plan.json`, read only the relevant state files and generate high-quality Gherkin scenarios.
+**Goal:** For each group, read relevant state files and generate Gherkin scenarios.
 
-#### Step 2.0: Initialize Feature File
-
-Write the feature file header:
+### Step 2.0: Write Feature File Header
 
 ```gherkin
 Feature: <feature_name>
@@ -96,15 +79,59 @@ Feature: <feature_name>
   So that I can ensure the application works correctly
 ```
 
-#### Step 2.1: Iterate Over Groups
+### Step 2.1: Process ONE Group at a Time
 
-For each group in `_plan.json["groups"]`, sequentially:
+**CRITICAL: Do NOT delegate scenario generation to sub-agents (Agent tool).** You MUST process each group yourself in the main conversation. The only acceptable use of the Agent tool during Phase 2 is for reading large state files in parallel — never for generating or writing scenarios. This is because sub-agents lose context on knowledge base pattern matching rules, leading to coverage gaps.
 
-1. **Read state files:** For each state_id in the group's `state_ids`, read `e2e_output/states/<state_id>.json` to get `ui_tree` and `interactive_elements`
-2. **Re-read the flows** for this group from `flows.json` (just the flows matching `flow_ids`)
-3. **Review the design_notes** from the plan to recall the intended test strategy
-4. **Generate scenarios** for this group, applying the test case expansion strategies (see "Test Case Expansion Strategies" below)
-5. **Append** the generated scenarios to the `.feature` file, preceded by a group comment header:
+**You MUST process groups one at a time. For each group, complete ALL steps below and write the output to the feature file BEFORE moving to the next group. Do NOT plan or generate scenarios for multiple groups in a single step.**
+
+For the current group:
+
+1. **Read state files** for this group's `state_ids` — get `ui_tree` and `interactive_elements`
+
+2. **KB Pattern Scan (MANDATORY)** — Before generating any scenarios, scan every state in this group and output a structured KB match report. This step is NOT optional — you MUST output this scan before proceeding to scenario generation.
+
+   For each state in the group, scan `interactive_elements` and `ui_tree` against the knowledge base patterns:
+   - **SearchField**: `type in (TextField, SearchField)` AND label matches search/filter/find/query/搜索/検索, or inside a container with "Search" in its label
+   - **Toggle**: `type in (CheckBox, Switch)` OR button label matches Turn On/Off, Enable/Disable, Pin/Unpin, Mute/Unmute
+   - **Dropdown**: `type in (PopUpButton, ComboBox, Select)`
+   - **TextInput**: `type in (TextField, TextArea, SecureTextField)` AND does NOT match SearchField
+   - **List**: `type in (Table, List, OutlineView)` or repeated similar child elements
+   - **ContextMenu**: `type == MenuItem` or state reached via RIGHT_CLICK
+   - **Dialog**: state has buttons with label matching Close/Cancel/OK/Save/Delete/Confirm/Done/Remove/Apply
+   - **Tab**: `type in (Tab, SegmentedControl, TabGroup)`
+
+   Output the scan in this exact format (include it in your response text):
+
+   ```
+   KB Pattern Scan — Group "<group_name>":
+   ┌─────────────────┬──────────────────────┬──────────────┬─────────────────────────────────┐
+   │ State           │ Element              │ KB Pattern   │ Required Test Patterns           │
+   ├─────────────────┼──────────────────────┼──────────────┼─────────────────────────────────┤
+   │ s_bd2359bd      │ TextField "Search"   │ SearchField  │ valid_query, no_results, clear   │
+   │ s_bd2359bd      │ Tab "Open Tabs"      │ Tab          │ switch_each, back_and_forth      │
+   │ (no more matches for this state)                                                        │
+   │ s_ef86e7dd      │ (no KB matches)      │ —            │ —                               │
+   └─────────────────┴──────────────────────┴──────────────┴─────────────────────────────────┘
+   Uncovered elements (contextually relevant, no KB pattern, no flow coverage):
+   - s_bd2359bd: Button "Organize Tabs" — not covered by any flow in this group
+   ```
+
+   If a state has NO KB pattern matches and NO uncovered relevant elements, write `(no KB matches, no uncovered elements)`.
+
+3. **Generate scenarios** using the flows, state data, AND the KB scan from step 2:
+
+   **a) Positive path — with functional dedup**: Group flows by the functional action they test. Flows that perform the same action but differ only in precondition quantity (e.g., different item counts) are functionally equivalent — generate ONE scenario using the simplest precondition. Only generate separate scenarios when different preconditions cause **different behavior** (e.g., deleting the last item vs. deleting a non-last item).
+
+   **b) State-dependent scenarios** — what if the precondition differs? (e.g., "add favorite" when already favorited); what if the action is repeated?
+
+   **c) Keyboard shortcut scenarios** — if `utg.json` has `shortcuts` or a step has `shortcut_alternative`, generate a parallel scenario using the shortcut. Tag: `@shortcut`
+
+   **d) KB-pattern-driven scenarios** — for every row in the KB scan table, generate scenarios for required test patterns that are **not already covered** by flow-based scenarios from step (a). If a flow scenario already exercises the same element with the same interaction pattern, that pattern is covered — do NOT generate a duplicate.
+
+   **e) Uncovered element scenarios** — for each uncovered element listed in the KB scan (not generic browser chrome like Back, Refresh, Address bar), generate a scenario that exercises it based on the element's label and type.
+
+4. **Write to file immediately** — append this group's scenarios to the `.feature` file using the Edit or Write tool NOW, before processing the next group. Use the group comment header:
 
 ```gherkin
 
@@ -112,15 +139,15 @@ For each group in `_plan.json["groups"]`, sequentially:
   # Group Name (flows 001, 003)
   # ============================================================
 
-  @happy
+  @P0 @happy
   Scenario: ...
 ```
 
-**IMPORTANT:** After finishing each group, move on to the next group. Do not go back and modify previously generated groups. Each group is self-contained.
+**After writing this group's scenarios to the file, proceed to the next group. Do not go back to modify previous groups. Repeat steps 1-3 for each remaining group.**
 
 ---
 
-### Phase 3: Finalize
+## Phase 3: Finalize
 
 1. Delete `e2e_output/features/_plan.json`
 2. Regenerate the HTML report:
@@ -134,252 +161,165 @@ uv run --project e2e-coverage python3 e2e-coverage/scripts/report.py \
   -o e2e_output/report.html
 ```
 
----
+3. **Reflection — knowledge base evolution (optional)**
 
-## Test Case Expansion Strategies
+Briefly reflect: were there element types in the states that the knowledge base did NOT cover, where you had to improvise test patterns? Did you discover a **generalizable** pattern (not app-specific)?
 
-For each flow, apply **test case design techniques** to expand it into **multiple scenarios**. A single flow is NOT a single test case — it is a user journey that must be tested from multiple angles. Use your judgment to decide which strategies apply and how many scenarios to generate — there is no fixed number.
+If yes: draft the proposed addition following the format in `element_patterns.md`, **ask the user for confirmation**, then append if approved.
 
-### Positive path (from the flow itself)
-- The happy path as described in the flow
-
-### Negative / Error input
-- For every input field (TYPE action) in the flow, consider error scenarios:
-  - Invalid input (special characters, SQL injection strings, extremely long text)
-  - Empty input (submit without entering anything)
-- For every action that can fail, consider: what if the target element is missing or disabled?
-
-### Boundary conditions
-- For input fields: minimum length, maximum length, unicode/emoji, whitespace-only
-- For search: query that returns no results, query that returns exactly one result
-- For lists: empty list state, single item, many items
-
-### State-dependent scenarios
-- What if the precondition is different? (e.g., "add favorite" when the page is already favorited)
-- What if the user repeats the action? (e.g., pin favorites twice)
-
-### Keyboard shortcut scenarios
-- If `utg.json` has a `shortcuts` array, or any step in the flow has a `shortcut_alternative` field, generate an additional scenario that uses the keyboard shortcut instead of the UI click
-- The scenario should verify the same outcome but use `press "<shortcut>"` instead of `click`
-- Tag: `@shortcut`
-
-### Uncovered interactive elements in explored states
-- For every state that appears in the group's flows, read its `interactive_elements` list
-- Identify **all actionable elements** (buttons, menu items, checkboxes, dropdowns) that are contextually relevant to the state's purpose (ignore generic browser chrome like Back, Refresh, Address bar)
-- Cross-reference with the flows: if an element exists in the state but NO flow clicks/interacts with it, generate a scenario that exercises that element
-- Example: a dialog has "Cancel" and "Delete" buttons, but flows only cover "Cancel" → generate a scenario that clicks "Delete" and verifies the expected outcome
-- Example: a menu has 4 items but flows only cover 3 → generate a scenario for the missing menu item
-- For dialogs with multiple options (checkboxes, dropdowns), generate scenarios that exercise different combinations
-- Tag: same as the parent flow's tag (e.g., `@happy` for a missing happy-path action)
-
-### Right-click context menu scenarios
-- If a flow contains a `RIGHT_CLICK` action that leads to a context menu state, read the target state's `interactive_elements` to find all `MenuItem` elements in the menu
-- Generate a **separate scenario for each menu item**: right-click to open the menu, then click the menu item, and verify a reasonable outcome based on the menu item's label
-- Tag: `@context-menu`
+Criteria for a valid knowledge base addition:
+- Generalizable across apps (not "Edge's tab search should search by tab title")
+- Non-obvious (experienced testers wouldn't naturally generate it without a hint)
+- Not duplicating an existing pattern
 
 ---
 
-## Gherkin Generation Rules
+## Tags & Priority
 
-### Structure
+Every scenario MUST have both a priority tag and a category tag.
 
-```gherkin
-Feature: <feature_name>
-  As a user of <app_name>
-  I want to verify the core workflows
-  So that I can ensure the application works correctly
+**Priority tags:**
+- `@P0` — Core happy path. If it fails, the feature is broken.
+- `@P1` — Important secondary: error handling, round-trip, negative cases, persistence. Feature works but has notable gaps.
+- `@P2` — Edge cases, boundary, rare interactions. Feature works but may have rough edges.
 
-  @<category>
-  Scenario: <scenario name>
-    Given <precondition based on start state>
-    When <step 1 action>
-    And <step 2 action>
-    ...
-    Then <verification 1>
-    And <verification 2>
-```
+**Category tags:**
+- `@happy`, `@error`, `@boundary`, `@shortcut`, `@context-menu`, `@functional`
 
-**Tags:**
-- `@happy`, `@error`, `@boundary` — based on what the scenario tests
-- `@shortcut` — scenario uses keyboard shortcut instead of UI click
-- `@context-menu` — scenario tests a right-click context menu item
+Tags are combinable: `@P0 @happy @shortcut`. Use priority guidance from the knowledge base when applicable.
 
-Tags are combinable: a shortcut scenario is also `@happy`, so use `@happy @shortcut`.
+---
+
+## Gherkin Quality Rules
 
 ### Given (Precondition)
 
-- **Every scenario MUST start with launching the app**: `Given I launch the Edge browser`
-- **Every precondition MUST be expressed as explicit, reproducible steps — NEVER as abstract state descriptions.** The tester must know exactly how to reach the starting state.
-- Use the UTG transitions to derive the navigation path from `start_state` to the flow's first state. Write each navigation action as a separate `And` step.
-- **NEVER** write vague preconditions like `And the Favorites panel is open` or `And the History full page is open`. Instead, write the exact actions:
-  ```gherkin
-  # BAD — abstract, tester doesn't know how to get there
-  Given I launch the Edge browser
-  And the Favorites panel is open
+- **Every scenario starts with launching the app**: `Given I launch the Edge browser`
+- **Reaching start_state**: Read `exploration_context.txt` for entry points. Convert them into explicit Given steps. NEVER write vague preconditions like `And the panel is open`.
+- **Reaching states beyond start_state**: Use UTG transitions to find the **shortest path** (BFS) from start_state. Do NOT blindly follow the flow's path array.
+- Chain all navigation actions as separate `And` steps.
 
-  # GOOD — explicit steps to reach the state
-  Given I launch the Edge browser
-  And I press "Ctrl+H" to open the History sidebar
-  ```
-  ```gherkin
-  # BAD
-  Given I launch the Edge browser
-  And the History full page is open at "edge://history"
+### When/And (Actions)
 
-  # GOOD
-  Given I launch the Edge browser
-  And I press "Command+Y" to open the History full page
-  ```
-- If a scenario's precondition requires multiple navigations (e.g., reaching a pinned sidebar state), chain all the steps:
-  ```gherkin
-  Given I launch the Edge browser
-  And I press "Ctrl+H" to open the History sidebar
-  And I click the "Pin history" button in the History sidebar toolbar
-  ```
+- Read `ui_tree` to find element's container context
+- If label is unique in the state: `When I click the "Pin favorites" button`
+- If label appears multiple times, add container: `When I click the "More options" button in the Favorites toolbar`
+- For TYPE actions, specify the text: `When I type "test query" in the "Search favorites" input field`
 
-### When/And (Action Steps)
+### Then (Assertions)
 
-For each step in `flow.steps` that has an `action`:
+- Be specific and testable — no "should work correctly"
+- Verify functional behavior, not UI styling
+- End-to-end completeness: copy → verify by paste; save → verify file exists; toggle → verify effect persists
 
-1. **Read the ui_tree** of the step's state to find the element's hierarchical context
-2. Generate a precise action description using:
-   - The element's `label` (from interactive_elements)
-   - The element's **container context** from `ui_tree` (parent toolbar/panel/group)
-   - An explicit action verb: `click`, `type`, `press`, `select`, `drag`
+### Deduplication
 
-**Element precision rules:**
-- If the label is unique in the state, use just the label: `When I click the "Pin favorites" button`
-- If the label appears multiple times, add container context from ui_tree: `When I click the "More options" button in the Favorites toolbar`
-- For TYPE actions, specify what to type: `When I type "test query" in the "Search favorites" input field`
+Use semantic understanding to deduplicate, not just mechanical prefix matching. Before generating a scenario, ask: **"Does an existing scenario already test the same functional behavior through the same entry path?"**
 
-### Then (Assertion)
+Rules:
+1. **Subsequence containment**: If scenario A's core action sequence is a subsequence of scenario B and both share the same entry path, keep only the more comprehensive one and merge unique assertions.
+2. **Different entry paths — keep both**: If two scenarios test the same functional outcome but reach it via different navigation paths or entry points, keep BOTH. Different entry paths are valuable coverage.
+3. **Lifecycle vs atomic — prefer atomic**: When a lifecycle flow (create → rename → use → cleanup) exists alongside individual atomic flows that each cover one step, **drop the lifecycle scenario** and keep the atomic ones. Each atomic scenario tests one clear behavior with focused assertions. Lifecycle scenarios dilute signal — if step 3 of 5 fails, it's unclear what broke.
 
-- Convert the flow's last step `assertion` field into a testable Then statement
-- Be specific about what to verify — no vague "should work correctly"
-- Focus on functional behavior, not UI styling
-
-### Content Quality Rules
-
-1. **Use concrete actions, not vague statements**
-   - Use `When I navigate to "https://bing.com"` instead of `When I open a webpage`
-   - Use `Then the favorites list should show "GitHub", "Bing", "Microsoft"` instead of `Then the favorites should be sorted`
-
-2. **Every step must be explicit — no pronouns or references**
-   - NEVER: `Then the default save location should be correct` — specify the actual location
-   - NEVER: `Then no changes should be made` — specify what to check
-   - NEVER: `Then the deleted items should be restored` — specify which items
-   - NEVER: `Then the sort order should be maintained` — specify the exact order
-
-3. **One scenario = one focused functionality**
-   - Do NOT combine multiple test goals into one scenario
-   - If a flow tests "pin then unpin", that's one functionality (toggle behavior), keep it as one scenario
-
-4. **One step = one thing**
-   - Each Given/When/Then line must express exactly ONE action or ONE verification
-   - NEVER combine two verifications in one Then line
-   - NEVER: `Then the dialog should appear showing the name and the folder`
-   - CORRECT: split into `Then the dialog should appear` + `And the dialog should show the name` + `And the folder selector should default to "Favorites bar"`
-
-5. **Exclude UI style validations**
-   - No: `Then the button should be highlighted`
-   - No: `Then the icon should change`
-   - Yes: `Then the favorites panel should be pinned as a sidebar`
-
-6. **Ensure end-to-end completeness**
-   - Copy to clipboard → must verify by pasting
-   - Save/download → must verify file exists or content correct
-   - Change setting → must verify it persists after reopen
-   - Create/edit content → must verify changes are saved and displayed
-
-7. **Maximize automation compatibility**
-   - Use element labels that match the app's accessibility tree (these come from ui_tree)
-   - Use clear action verbs: click, type, drag, select, press
-   - Make verification steps objectively testable
+---
 
 ## Examples
 
-### Good Example — Expanding a flow into multiple scenarios
+### Example 1 — Flow expansion with priority tags
 
-Given this flow:
+Given this flow (exploration_context.txt says Entry point: `click "Compose" button in toolbar`):
 ```json
 {
-  "name": "Search favorites and exit search",
-  "type": "happy",
+  "name": "Send email with attachment",
   "steps": [
-    {"state": "s_8b092bb2", "action": "CLICK(Search favorites)", "assertion": null},
-    {"state": "s_53a4829e", "action": "TYPE(Search favorites, test)", "assertion": null},
-    {"state": "s_53a4829e", "action": "CLICK(Exit search)", "assertion": null},
-    {"state": "s_9e226d83", "action": null, "assertion": "Favorites panel returns to normal view"}
+    {"state": "s_compose", "action": "TYPE(To, recipient@example.com)", "assertion": null},
+    {"state": "s_compose", "action": "CLICK(Attach file)", "assertion": null},
+    {"state": "s_filepicker", "action": "CLICK(Select)", "assertion": null},
+    {"state": "s_compose_attached", "action": "CLICK(Send)", "assertion": null},
+    {"state": "s_inbox", "action": null, "assertion": "Email sent, returns to inbox"}
   ]
 }
 ```
 
-This ONE flow should expand to MULTIPLE scenarios:
+This ONE flow expands to MULTIPLE scenarios:
+
+```gherkin
+@P0 @happy
+Scenario: Send email with a valid attachment
+  Given I launch the Email app
+  And I click the "Compose" button in the toolbar
+  When I type "recipient@example.com" in the "To" input field
+  And I click the "Attach file" button
+  And I select "document.pdf" in the file picker
+  And I click the "Select" button
+  Then the compose window should show "document.pdf" as an attachment
+  When I click the "Send" button
+  Then the inbox should be displayed
+  And the sent email should appear in the "Sent" folder with the attachment
+
+@P1 @error
+Scenario: Send email with invalid recipient address
+  Given I launch the Email app
+  And I click the "Compose" button in the toolbar
+  When I type "not-an-email" in the "To" input field
+  And I click the "Send" button
+  Then an error message should indicate the recipient address is invalid
+
+@P1 @happy
+Scenario: Remove attachment before sending
+  Given I launch the Email app
+  And I click the "Compose" button in the toolbar
+  When I click the "Attach file" button
+  And I select "document.pdf" in the file picker
+  And I click the "Select" button
+  Then the compose window should show "document.pdf" as an attachment
+  When I click the "Remove" button on the "document.pdf" attachment
+  Then the attachment should be removed from the compose window
+```
+
+### Example 2 — Knowledge-base-driven: SearchField with no flow coverage
+
+A state `s_bd2359bd` contains a `TextField` inside a `WebView` labeled "TabSearch", but NO flow has a TYPE action on it. The knowledge base's **SearchField** pattern matches. The state also shows open tabs titled "New Tab", "Settings", "History".
+
+```gherkin
+@P0 @happy
+Scenario: Search tabs by keyword filters results to matching tabs
+  Given I launch the Edge browser
+  And I open three tabs: "New Tab", "Settings", "History"
+  When I click the "Search tabs" button in the tab bar
+  And I type "Settings" in the search field in the Search Tabs dropdown
+  Then only the "Settings" tab should appear in the results list
+
+@P1 @happy
+Scenario: Search tabs with non-matching query shows no results
+  Given I launch the Edge browser
+  And I open two tabs
+  When I click the "Search tabs" button in the tab bar
+  And I type "zzz_nonexistent_xyz" in the search field in the Search Tabs dropdown
+  Then the results list should show no matching tabs
+
+@P1 @happy
+Scenario: Clear search query restores full tab list
+  Given I launch the Edge browser
+  And I open three tabs
+  When I click the "Search tabs" button in the tab bar
+  And I type "Settings" in the search field
+  Then filtered results should be displayed
+  When I clear the search field
+  Then all open tabs should be listed again
+```
+
+**Why this works:** The flow only covered `CLICK(Search tabs)` → dropdown opens. The knowledge base detected the SearchField and generated the real search scenarios that the flow missed.
+
+### Example 3 — Bad scenario (what NOT to do)
 
 ```gherkin
 @happy
-Scenario: Search favorites with a matching keyword
-  Given I launch the Edge browser
-  And the Favorites panel is open
-  When I click the "Search favorites" button in the Favorites toolbar
-  And I type "GitHub" in the "Search favorites" input field
-  Then the favorites list should show only items matching "GitHub"
-
-@happy
-Scenario: Exit search mode returns to full favorites list
-  Given I launch the Edge browser
-  And the Favorites panel is in search mode
-  When I click the "Exit search" button
-  Then the Favorites panel should show the full favorites list
-
-@error
-Scenario: Search favorites with special characters
-  Given I launch the Edge browser
-  And the Favorites panel is open
-  When I click the "Search favorites" button in the Favorites toolbar
-  And I type "<script>alert(1)</script>" in the "Search favorites" input field
-  Then the search should complete without errors
-  And no matching favorites should be found
-
-@boundary
-Scenario: Search favorites with no matching results
-  Given I launch the Edge browser
-  And the Favorites panel is open
-  When I click the "Search favorites" button in the Favorites toolbar
-  And I type "zzz_nonexistent_query" in the "Search favorites" input field
-  Then the favorites list should show an empty state or "no results" message
-
-@boundary
-Scenario: Search favorites with empty input
-  Given I launch the Edge browser
-  And the Favorites panel is open
-  When I click the "Search favorites" button in the Favorites toolbar
-  And I type "" in the "Search favorites" input field
-  Then the full favorites list should remain visible
+Scenario: Test compose functionality
+  Given the compose window is open
+  When the user attaches a file
+  And the user sends the email
+  Then the email should be sent
 ```
 
-**Why this is good:**
-- One flow expands to 5 scenarios covering positive, error, and boundary cases
-- Each scenario focuses on ONE test objective
-- Each step does exactly ONE thing
-- Element references include container context from ui_tree
-- Assertions are specific and testable
-
-### Bad Example
-
-```gherkin
-@happy @regression
-Scenario: Test search functionality
-  Given the user is on the favorites page
-  When the user clicks search
-  And the user exits search
-  Then the page should return to normal
-```
-
-**Why this is bad:**
-- One flow → one scenario (no test design expansion)
-- Vague starting condition ("the user is on the favorites page")
-- Third person ("the user") instead of first person
-- No element context ("clicks search" — which search?)
-- Vague assertion ("return to normal" — what does normal mean?)
-- Missing error and boundary scenarios entirely
+Problems: no priority tag, vague precondition, third person, no concrete data, vague assertion.

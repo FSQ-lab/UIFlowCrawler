@@ -8,6 +8,8 @@
   echo '<xml>...</xml>' | python normalize.py -             # 从 stdin 读取
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import re
@@ -35,7 +37,11 @@ INTERACTIVE_TYPES = {
     "XCUIElementTypeTableRow",
 }
 
-SKIP_LABELS = {"Close", "Minimize", "Zoom", "FullScreen", ""}
+# Labels to always skip (empty label = no meaningful identifier)
+SKIP_LABELS = {""}
+
+# Window chrome button labels — only skipped when direct child of Window element
+WINDOW_CHROME_LABELS = {"Close", "Minimize", "Zoom", "FullScreen"}
 
 # Matches keyboard shortcuts like (⌘D), (⇧⌘N), (⌥⌘I), (⌃⇧⌘F)
 SHORTCUT_RE = re.compile(r'\s*\(([⌘⇧⌥⌃]+[A-Za-z0-9])\)\s*$')
@@ -82,8 +88,25 @@ def get_eligible_actions(element_type: str) -> list[str]:
     return actions
 
 
+def _is_window_chrome(elem, parent_map: dict) -> bool:
+    """Check if element is a window chrome button (Close/Minimize/Zoom/FullScreen).
+
+    Window chrome buttons are direct children of the Window element.
+    """
+    label = elem.attrib.get("label") or elem.attrib.get("name") or ""
+    if label not in WINDOW_CHROME_LABELS:
+        return False
+    parent = parent_map.get(elem)
+    if parent is not None and parent.tag == "XCUIElementTypeWindow":
+        return True
+    return False
+
+
 def parse_page_source(xml_str: str) -> dict:
     root = ET.fromstring(xml_str)
+
+    # Build parent map for ancestry checks
+    parent_map = {child: parent for parent in root.iter() for child in parent}
 
     all_elements = []
     interactive_elements = []
@@ -115,10 +138,10 @@ def parse_page_source(xml_str: str) -> dict:
 
         is_interactive = (
             tag in INTERACTIVE_TYPES
-            and enabled == "true"
             and visible != "false"  # macOS popup menus report visible="" for items
             and label not in SKIP_LABELS
-            and int(y) > 50  # 跳过菜单栏区域
+            and not _is_window_chrome(elem, parent_map)
+            and int(y) >= 29  # 跳过菜单栏区域 (menu bar is y=0..28)
             and int(width) > 0
             and int(height) > 0
         )
@@ -259,6 +282,9 @@ TAG_SHORT = {
     "XCUIElementTypeSplitGroup": "SplitGroup",
     "XCUIElementTypeSheet": "Sheet",
     "XCUIElementTypePopover": "Popover",
+    "XCUIElementTypeStaticText": "StaticText",
+    "XCUIElementTypeImage": "Image",
+    "XCUIElementTypeOther": "Other",
 }
 
 
@@ -289,12 +315,15 @@ def build_ui_tree(xml_str: str) -> dict | None:
         return y <= 30
 
     def _is_meaningful(elem) -> bool:
-        """Node is interactive or a labeled container."""
+        """Node is interactive, a labeled container, or has content (e.g. StaticText)."""
         tag = elem.tag
         label = _get_label(elem)
         if tag in INTERACTIVE_TYPES:
             return True
         if tag in CONTAINER_TYPES and label:
+            return True
+        # Keep any non-container element with a label (e.g. StaticText, Image)
+        if label and tag not in CONTAINER_TYPES:
             return True
         return False
 
@@ -351,6 +380,8 @@ def normalize(xml_str: str) -> dict:
             "x": e["x"], "y": e["y"],
             "width": e["width"], "height": e["height"],
         }
+        if e.get("enabled") != "true":
+            entry["enabled"] = False
         if e.get("has_children"):
             entry["has_children"] = True
         m = SHORTCUT_RE.search(label)

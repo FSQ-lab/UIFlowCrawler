@@ -72,6 +72,7 @@ def save_blacklist(output_dir: Path, blacklist: list[str]):
     """Save blacklist to e2e_output/blacklist.json."""
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "blacklist.json"
+    path.write_text(json.dumps(blacklist, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def append_shortcuts_raw(output_dir: Path, shortcuts: list[dict], source_state: str):
@@ -264,6 +265,8 @@ def get_unexplored(state: dict, state_id: str, output_dir: Path) -> list[tuple[d
     for el in elements:
         label = el.get("label", "")
         if _is_blacklisted(label, blacklist):
+            continue
+        if el.get("enabled") is False:
             continue
         k = element_key(el)
         if label_counts[k] > 1:
@@ -939,6 +942,8 @@ def _summary(state: dict, output_dir: Path) -> dict:
         for el in elements:
             label = el.get("label", "")
             if _is_blacklisted(label, blacklist):
+                continue
+            if el.get("enabled") is False:
                 continue
             k = element_key(el)
             if label_counts[k] > 1:
