@@ -1,0 +1,1389 @@
+[
+  {
+    "id": "flow_001",
+    "name": "Basic tab creation and closure from single tab",
+    "flow_path": "Single tab → Open new tab → Two tabs → Close tab → Single tab variant",
+    "steps": [
+      {
+        "state": "s_0b844a64",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_0e751043",
+        "action": "CLICK(Close tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘W"
+      },
+      {
+        "state": "s_8954178e",
+        "action": null,
+        "assertion": "Only one tab remains in the tab bar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0b844a64",
+      "s_0e751043",
+      "s_8954178e"
+    ],
+    "edges": [
+      [
+        "s_0b844a64",
+        "s_0e751043"
+      ],
+      [
+        "s_0e751043",
+        "s_8954178e"
+      ]
+    ]
+  },
+  {
+    "id": "flow_002",
+    "name": "Close last tab closes browser window",
+    "flow_path": "Single tab → Close tab → Empty state (window closes)",
+    "steps": [
+      {
+        "state": "s_0b844a64",
+        "action": "CLICK(Close tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘W"
+      },
+      {
+        "state": "s_d41d8cd9",
+        "action": null,
+        "assertion": "Browser window is closed or empty",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0b844a64",
+      "s_d41d8cd9"
+    ],
+    "edges": [
+      [
+        "s_0b844a64",
+        "s_d41d8cd9"
+      ]
+    ]
+  },
+  {
+    "id": "flow_003",
+    "name": "Open multiple tabs up to five and close back down",
+    "flow_path": "Single tab → New tab → Two tabs → New tab → Three tabs → New tab → Four tabs → New tab → Five tabs → Close tab → Four tabs → Close tab → Three tabs → Close tab → Two tabs",
+    "steps": [
+      {
+        "state": "s_0b844a64",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_0e751043",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_dd1da78d",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_93177eaa",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_0d489eef",
+        "action": "CLICK(Close tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘W"
+      },
+      {
+        "state": "s_93177eaa",
+        "action": "CLICK(Close tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘W"
+      },
+      {
+        "state": "s_dd1da78d",
+        "action": "CLICK(Close tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘W"
+      },
+      {
+        "state": "s_0e751043",
+        "action": null,
+        "assertion": "Two tabs remain in the tab bar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0b844a64",
+      "s_0e751043",
+      "s_dd1da78d",
+      "s_93177eaa",
+      "s_0d489eef",
+      "s_93177eaa",
+      "s_dd1da78d",
+      "s_0e751043"
+    ],
+    "edges": [
+      [
+        "s_0b844a64",
+        "s_0e751043"
+      ],
+      [
+        "s_0e751043",
+        "s_dd1da78d"
+      ],
+      [
+        "s_dd1da78d",
+        "s_93177eaa"
+      ],
+      [
+        "s_93177eaa",
+        "s_0d489eef"
+      ],
+      [
+        "s_0d489eef",
+        "s_93177eaa"
+      ],
+      [
+        "s_93177eaa",
+        "s_dd1da78d"
+      ],
+      [
+        "s_dd1da78d",
+        "s_0e751043"
+      ]
+    ]
+  },
+  {
+    "id": "flow_004",
+    "name": "New tab stays on same tab count (self-loop)",
+    "flow_path": "Two tabs → Click existing tab → Still two tabs → Three tabs → Click existing tab → Still three tabs",
+    "steps": [
+      {
+        "state": "s_0e751043",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_0e751043",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_dd1da78d",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_dd1da78d",
+        "action": null,
+        "assertion": "Still three tabs visible after clicking an existing tab",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0e751043",
+      "s_0e751043",
+      "s_dd1da78d",
+      "s_dd1da78d"
+    ],
+    "edges": [
+      [
+        "s_0e751043",
+        "s_0e751043"
+      ],
+      [
+        "s_0e751043",
+        "s_dd1da78d"
+      ],
+      [
+        "s_dd1da78d",
+        "s_dd1da78d"
+      ]
+    ]
+  },
+  {
+    "id": "flow_005",
+    "name": "Search tabs dropdown from single tab and variant",
+    "flow_path": "Single tab → Search tabs → Dropdown open → Escape → Single tab variant → Search tabs → Same dropdown",
+    "steps": [
+      {
+        "state": "s_0b844a64",
+        "action": "CLICK(Search tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_ef86e7dd",
+        "action": null,
+        "assertion": "Search tabs dropdown shows Turn On Vertical Tabs and Organize Tabs options",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0b844a64",
+      "s_ef86e7dd"
+    ],
+    "edges": [
+      [
+        "s_0b844a64",
+        "s_ef86e7dd"
+      ]
+    ]
+  },
+  {
+    "id": "flow_006",
+    "name": "Search tabs dropdown from single tab variant",
+    "flow_path": "Single tab variant → Search tabs → Dropdown open",
+    "steps": [
+      {
+        "state": "s_bfe22bc3",
+        "action": "CLICK(Search tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_ef86e7dd",
+        "action": null,
+        "assertion": "Search tabs dropdown opens showing Turn On Vertical Tabs option",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_bfe22bc3",
+      "s_ef86e7dd"
+    ],
+    "edges": [
+      [
+        "s_bfe22bc3",
+        "s_ef86e7dd"
+      ]
+    ]
+  },
+  {
+    "id": "flow_007",
+    "name": "Search tabs dropdown from four-tab state",
+    "flow_path": "Single tab → New tabs → Four tabs → Search tabs → Dropdown open",
+    "steps": [
+      {
+        "state": "s_93177eaa",
+        "action": "CLICK(Search tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_06aaf1c9",
+        "action": null,
+        "assertion": "Search tabs dropdown opens from four-tab state",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_93177eaa",
+      "s_06aaf1c9"
+    ],
+    "edges": [
+      [
+        "s_93177eaa",
+        "s_06aaf1c9"
+      ]
+    ]
+  },
+  {
+    "id": "flow_008",
+    "name": "Search tabs with Open Tabs and Recently Closed tabs",
+    "flow_path": "Two tabs → Search tabs → Open Tabs → Same dropdown → Recently Closed → Same dropdown",
+    "steps": [
+      {
+        "state": "s_0e751043",
+        "action": "CLICK(Search tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bd2359bd",
+        "action": "CLICK(Open Tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bd2359bd",
+        "action": "CLICK(Recently Closed)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bd2359bd",
+        "action": null,
+        "assertion": "Search tabs dropdown shows Recently Closed tab list",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0e751043",
+      "s_bd2359bd",
+      "s_bd2359bd",
+      "s_bd2359bd"
+    ],
+    "edges": [
+      [
+        "s_0e751043",
+        "s_bd2359bd"
+      ],
+      [
+        "s_bd2359bd",
+        "s_bd2359bd"
+      ]
+    ]
+  },
+  {
+    "id": "flow_009",
+    "name": "Turn on vertical tabs and explore expanded sidebar",
+    "flow_path": "Two tabs → Search tabs → Turn On Vertical Tabs → Expanded sidebar → Click tab → Collapsed with two tabs → Click tab → Expanded hover with two tabs",
+    "steps": [
+      {
+        "state": "s_0e751043",
+        "action": "CLICK(Search tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_bd2359bd",
+        "action": "CLICK(Turn On Vertical Tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_82772d92",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8bfcbd47",
+        "action": null,
+        "assertion": "Vertical tabs collapsed sidebar showing two tab icons",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0e751043",
+      "s_bd2359bd",
+      "s_82772d92",
+      "s_8bfcbd47"
+    ],
+    "edges": [
+      [
+        "s_0e751043",
+        "s_bd2359bd"
+      ],
+      [
+        "s_bd2359bd",
+        "s_82772d92"
+      ],
+      [
+        "s_82772d92",
+        "s_8bfcbd47"
+      ]
+    ]
+  },
+  {
+    "id": "flow_010",
+    "name": "Vertical tabs expanded sidebar hover variants",
+    "flow_path": "Expanded sidebar → Click tab → Expanded hover with two tabs → Click tab → Expanded hover with three tabs",
+    "steps": [
+      {
+        "state": "s_82772d92",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_51b9c229",
+        "action": null,
+        "assertion": "Vertical tabs expanded sidebar on hover showing two tabs with Pin pane button",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_82772d92",
+      "s_51b9c229"
+    ],
+    "edges": [
+      [
+        "s_82772d92",
+        "s_51b9c229"
+      ]
+    ]
+  },
+  {
+    "id": "flow_011",
+    "name": "Vertical tabs hover with three tabs",
+    "flow_path": "Expanded sidebar → Click new tab → Expanded hover with three tabs",
+    "steps": [
+      {
+        "state": "s_82772d92",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_073f9f17",
+        "action": null,
+        "assertion": "Vertical tabs expanded sidebar showing three tabs with Pin pane button",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_82772d92",
+      "s_073f9f17"
+    ],
+    "edges": [
+      [
+        "s_82772d92",
+        "s_073f9f17"
+      ]
+    ]
+  },
+  {
+    "id": "flow_012",
+    "name": "Pin vertical tabs sidebar pane",
+    "flow_path": "Expanded sidebar hover → Pin pane → Pinned expanded sidebar with Collapse pane option",
+    "steps": [
+      {
+        "state": "s_51b9c229",
+        "action": "CLICK(Pin pane)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_5fea60ed",
+        "action": null,
+        "assertion": "Sidebar is pinned open permanently with Collapse pane button visible",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_51b9c229",
+      "s_5fea60ed"
+    ],
+    "edges": [
+      [
+        "s_51b9c229",
+        "s_5fea60ed"
+      ]
+    ]
+  },
+  {
+    "id": "flow_013",
+    "name": "Collapse and turn off vertical tabs",
+    "flow_path": "Expanded sidebar → Collapse pane → Collapsed sidebar → (context: turn off from other path) → Turn off vertical tabs → Three tabs horizontal",
+    "steps": [
+      {
+        "state": "s_82772d92",
+        "action": "CLICK(Collapse pane)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_49405880",
+        "action": null,
+        "assertion": "Vertical tabs sidebar collapses to icon-only view",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_82772d92",
+      "s_49405880"
+    ],
+    "edges": [
+      [
+        "s_82772d92",
+        "s_49405880"
+      ]
+    ]
+  },
+  {
+    "id": "flow_014",
+    "name": "Turn off vertical tabs returns to horizontal",
+    "flow_path": "Vertical tabs expanded → Turn Off Vertical Tabs → Three tabs horizontal",
+    "steps": [
+      {
+        "state": "s_82772d92",
+        "action": "CLICK(Turn Off Vertical Tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_dd1da78d",
+        "action": null,
+        "assertion": "Tabs return to horizontal layout with three tabs",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_82772d92",
+      "s_dd1da78d"
+    ],
+    "edges": [
+      [
+        "s_82772d92",
+        "s_dd1da78d"
+      ]
+    ]
+  },
+  {
+    "id": "flow_015",
+    "name": "New tab in collapsed vertical sidebar",
+    "flow_path": "Collapsed sidebar two tabs → Click New Tab button → Collapsed sidebar three tabs",
+    "steps": [
+      {
+        "state": "s_8bfcbd47",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_def36f33",
+        "action": null,
+        "assertion": "New tab icon appears in collapsed vertical sidebar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8bfcbd47",
+      "s_def36f33"
+    ],
+    "edges": [
+      [
+        "s_8bfcbd47",
+        "s_def36f33"
+      ]
+    ]
+  },
+  {
+    "id": "flow_016",
+    "name": "Organize Tabs dialog close and cancel actions",
+    "flow_path": "Two tabs → Search tabs → Organize Tabs → Close dialog → Three tabs",
+    "steps": [
+      {
+        "state": "s_bd2359bd",
+        "action": "CLICK(Organize Tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(Close)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_16a9cfd6",
+        "action": null,
+        "assertion": "Organize Tabs dialog is closed, tabs are unchanged",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_bd2359bd",
+      "s_c123973c",
+      "s_16a9cfd6"
+    ],
+    "edges": [
+      [
+        "s_bd2359bd",
+        "s_c123973c"
+      ],
+      [
+        "s_c123973c",
+        "s_16a9cfd6"
+      ]
+    ]
+  },
+  {
+    "id": "flow_017",
+    "name": "Organize Tabs cancel returns to base state",
+    "flow_path": "Organize Tabs → Cancel → Three tabs after dialog close",
+    "steps": [
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(Cancel)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_16a9cfd6",
+        "action": null,
+        "assertion": "Dialog closed without grouping tabs",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_c123973c",
+      "s_16a9cfd6"
+    ],
+    "edges": [
+      [
+        "s_c123973c",
+        "s_16a9cfd6"
+      ]
+    ]
+  },
+  {
+    "id": "flow_018",
+    "name": "Organize Tabs Group Tabs confirmation returns to base",
+    "flow_path": "Organize Tabs → Group Tabs → Three tabs after grouping",
+    "steps": [
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(Group Tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_16a9cfd6",
+        "action": null,
+        "assertion": "Tabs are grouped and dialog closes",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_c123973c",
+      "s_16a9cfd6"
+    ],
+    "edges": [
+      [
+        "s_c123973c",
+        "s_16a9cfd6"
+      ]
+    ]
+  },
+  {
+    "id": "flow_019",
+    "name": "Organize Tabs Group Tabs creates groups in vertical tabs",
+    "flow_path": "Organize Tabs → Group Tabs → Vertical tabs collapsed with three tabs",
+    "steps": [
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(Group Tabs)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_def36f33",
+        "action": null,
+        "assertion": "Tab groups are created",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_c123973c",
+      "s_def36f33"
+    ],
+    "edges": [
+      [
+        "s_c123973c",
+        "s_def36f33"
+      ]
+    ]
+  },
+  {
+    "id": "flow_020",
+    "name": "Organize Tabs Cancel to different layout state",
+    "flow_path": "Organize Tabs → Cancel → Six tabs organize dialog variant",
+    "steps": [
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(Cancel)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_90d51e58",
+        "action": null,
+        "assertion": "Cancel returns to organize tabs variant state",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_c123973c",
+      "s_90d51e58"
+    ],
+    "edges": [
+      [
+        "s_c123973c",
+        "s_90d51e58"
+      ]
+    ]
+  },
+  {
+    "id": "flow_021",
+    "name": "Organize Tabs satisfied feedback",
+    "flow_path": "Organize Tabs → I'm Satisfied → Out-of-scope satisfied state",
+    "steps": [
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(I'm Satisfied With The Suggestions)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_818620fa",
+        "action": null,
+        "assertion": "Satisfied feedback is recorded",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_c123973c",
+      "s_818620fa"
+    ],
+    "edges": [
+      [
+        "s_c123973c",
+        "s_818620fa"
+      ]
+    ]
+  },
+  {
+    "id": "flow_022",
+    "name": "Organize Tabs not satisfied feedback flow",
+    "flow_path": "Organize Tabs → I'm Not Satisfied → Feedback options → Not All Of My Tabs Are Grouped → Feedback submitted",
+    "steps": [
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(I'm Not Satisfied With The Suggestions)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_669cc05d",
+        "action": "CLICK(Not All Of My Tabs Are Grouped)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_b1170660",
+        "action": null,
+        "assertion": "Feedback option is submitted and dialog returns to organize tabs view",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_c123973c",
+      "s_669cc05d",
+      "s_b1170660"
+    ],
+    "edges": [
+      [
+        "s_c123973c",
+        "s_669cc05d"
+      ],
+      [
+        "s_669cc05d",
+        "s_b1170660"
+      ]
+    ]
+  },
+  {
+    "id": "flow_023",
+    "name": "Organize Tabs opens feedback via New Tab click",
+    "flow_path": "Organize Tabs → Click New Tab in dialog → Feedback options state",
+    "steps": [
+      {
+        "state": "s_c123973c",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_669cc05d",
+        "action": null,
+        "assertion": "Clicking tab in organize dialog shows feedback state",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_c123973c",
+      "s_669cc05d"
+    ],
+    "edges": [
+      [
+        "s_c123973c",
+        "s_669cc05d"
+      ]
+    ]
+  },
+  {
+    "id": "flow_024",
+    "name": "Right-click tab context menu and New Tab to the Right",
+    "flow_path": "Five tabs → Right-click tab → Context menu → New Tab to the Right → Seven tabs",
+    "steps": [
+      {
+        "state": "s_0d489eef",
+        "action": "RIGHT_CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8e6fe812",
+        "action": "CLICK(New Tab to the Right)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_5039b59e",
+        "action": null,
+        "assertion": "A new tab is inserted to the right of the right-clicked tab, total seven tabs",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0d489eef",
+      "s_8e6fe812",
+      "s_5039b59e"
+    ],
+    "edges": [
+      [
+        "s_0d489eef",
+        "s_8e6fe812"
+      ],
+      [
+        "s_8e6fe812",
+        "s_5039b59e"
+      ]
+    ]
+  },
+  {
+    "id": "flow_025",
+    "name": "Seven tabs open and close cycles",
+    "flow_path": "Seven tabs → Click tab (self-loop) → Close tab → Six tabs → Open new tab → Eight tabs",
+    "steps": [
+      {
+        "state": "s_5039b59e",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_5039b59e",
+        "action": "CLICK(Close tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘W"
+      },
+      {
+        "state": "s_70deaef7",
+        "action": null,
+        "assertion": "Six tabs remain after closing one from seven-tab state",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_5039b59e",
+      "s_5039b59e",
+      "s_70deaef7"
+    ],
+    "edges": [
+      [
+        "s_5039b59e",
+        "s_5039b59e"
+      ],
+      [
+        "s_5039b59e",
+        "s_70deaef7"
+      ]
+    ]
+  },
+  {
+    "id": "flow_026",
+    "name": "Seven tabs open to eight tabs",
+    "flow_path": "Seven tabs → New Tab → Eight tabs",
+    "steps": [
+      {
+        "state": "s_5039b59e",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_9a1a20ff",
+        "action": null,
+        "assertion": "Eight tabs visible in tab bar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_5039b59e",
+      "s_9a1a20ff"
+    ],
+    "edges": [
+      [
+        "s_5039b59e",
+        "s_9a1a20ff"
+      ]
+    ]
+  },
+  {
+    "id": "flow_027",
+    "name": "Five tabs click navigates to loaded page",
+    "flow_path": "Five tabs → Click tab with content → Hero Wars page loaded",
+    "steps": [
+      {
+        "state": "s_0d489eef",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_c08c1c95",
+        "action": null,
+        "assertion": "Tab with Hero Wars page is now active and page content is displayed",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0d489eef",
+      "s_c08c1c95"
+    ],
+    "edges": [
+      [
+        "s_0d489eef",
+        "s_c08c1c95"
+      ]
+    ]
+  },
+  {
+    "id": "flow_028",
+    "name": "Five tabs click new tab goes back to four tabs",
+    "flow_path": "Five tabs → Click existing tab → Four tabs",
+    "steps": [
+      {
+        "state": "s_0d489eef",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_93177eaa",
+        "action": null,
+        "assertion": "Four tabs remain after switching",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0d489eef",
+      "s_93177eaa"
+    ],
+    "edges": [
+      [
+        "s_0d489eef",
+        "s_93177eaa"
+      ]
+    ]
+  },
+  {
+    "id": "flow_029",
+    "name": "Four tabs self-loop on tab click",
+    "flow_path": "Four tabs → Click existing tab → Still four tabs → New tab → Four-tab same state",
+    "steps": [
+      {
+        "state": "s_93177eaa",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_93177eaa",
+        "action": null,
+        "assertion": "Four tabs remain, same state after clicking existing tab",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_93177eaa",
+      "s_93177eaa"
+    ],
+    "edges": [
+      [
+        "s_93177eaa",
+        "s_93177eaa"
+      ]
+    ]
+  },
+  {
+    "id": "flow_030",
+    "name": "New Tab from initial creates variant single tab",
+    "flow_path": "Single tab → New Tab (different click) → Single tab variant",
+    "steps": [
+      {
+        "state": "s_0b844a64",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_bfe22bc3",
+        "action": null,
+        "assertion": "A new tab page variant is shown",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0b844a64",
+      "s_bfe22bc3"
+    ],
+    "edges": [
+      [
+        "s_0b844a64",
+        "s_bfe22bc3"
+      ]
+    ]
+  },
+  {
+    "id": "flow_031",
+    "name": "Three tabs opens to four tabs",
+    "flow_path": "Three tabs → New Tab → Four tabs",
+    "steps": [
+      {
+        "state": "s_dd1da78d",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_93177eaa",
+        "action": null,
+        "assertion": "Four tabs visible after opening new tab from three",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_dd1da78d",
+      "s_93177eaa"
+    ],
+    "edges": [
+      [
+        "s_dd1da78d",
+        "s_93177eaa"
+      ]
+    ]
+  },
+  {
+    "id": "flow_032",
+    "name": "Four tabs opens to five tabs",
+    "flow_path": "Four tabs → New Tab → Five tabs",
+    "steps": [
+      {
+        "state": "s_93177eaa",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": "⌘T"
+      },
+      {
+        "state": "s_0d489eef",
+        "action": null,
+        "assertion": "Five tabs visible after opening new tab from four",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_93177eaa",
+      "s_0d489eef"
+    ],
+    "edges": [
+      [
+        "s_93177eaa",
+        "s_0d489eef"
+      ]
+    ]
+  },
+  {
+    "id": "flow_033",
+    "name": "Right-click blank tab bar area opens context menu",
+    "flow_path": "Single tab → Right-click blank tab bar → Context menu with New Tab, Restore Window, Turn On Vertical Tabs, Customize Toolbar, Browser Task Manager",
+    "steps": [
+      {
+        "state": "s_0b844a64",
+        "action": "RIGHT_CLICK(Tab bar)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_88a7187f",
+        "action": null,
+        "assertion": "Context menu shows: New Tab, Restore Window, Add Open Pages to Favorites, Name Window, Turn On Vertical Tabs, Customize Toolbar, Browser Task Manager",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0b844a64",
+      "s_88a7187f"
+    ],
+    "edges": [
+      [
+        "s_0b844a64",
+        "s_88a7187f"
+      ]
+    ]
+  },
+  {
+    "id": "flow_034",
+    "name": "New Tab from blank tab bar context menu creates new tab",
+    "flow_path": "Blank tab bar context menu → Click New Tab → Two tabs",
+    "steps": [
+      {
+        "state": "s_88a7187f",
+        "action": "CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_6027411d",
+        "action": null,
+        "assertion": "A new tab is created, now showing two tabs in the tab bar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_88a7187f",
+      "s_6027411d"
+    ],
+    "edges": [
+      [
+        "s_88a7187f",
+        "s_6027411d"
+      ]
+    ]
+  },
+  {
+    "id": "flow_035",
+    "name": "Create tab group via right-click Add Tab to New Group",
+    "flow_path": "Five tabs → Right-click tab → Context menu → Add Tab to New Group → Edit tab group dialog with title, colors, and group actions",
+    "steps": [
+      {
+        "state": "s_0d489eef",
+        "action": "RIGHT_CLICK(New Tab)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_8e6fe812",
+        "action": "CLICK(Add Tab to New Group)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_4f44ffbc",
+        "action": null,
+        "assertion": "Edit tab group dialog opens showing group title field, 9 color options (Blue, Pink, Violet, Purple, Royal blue, Teal, Orange, Yellow, Gray), New Tab in Group, Ungroup, Close Grouped Tabs, Move to new window, Add Tab Group to a New Collection, and Delete Group buttons",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_0d489eef",
+      "s_8e6fe812",
+      "s_4f44ffbc"
+    ],
+    "edges": [
+      [
+        "s_0d489eef",
+        "s_8e6fe812"
+      ],
+      [
+        "s_8e6fe812",
+        "s_4f44ffbc"
+      ]
+    ]
+  },
+  {
+    "id": "flow_036",
+    "name": "Rename tab group and change color",
+    "flow_path": "Edit tab group dialog → Type group name → Named group with edit dialog → Click Pink color → Color changes (same state)",
+    "steps": [
+      {
+        "state": "s_4f44ffbc",
+        "action": "TYPE(Tab-group title, MyGroup)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_97f83216",
+        "action": "CLICK(Pink)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_97f83216",
+        "action": null,
+        "assertion": "Tab group is renamed to 'MyGroup' and group color is changed to Pink; group header in tab bar shows new name",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_4f44ffbc",
+      "s_97f83216",
+      "s_97f83216"
+    ],
+    "edges": [
+      [
+        "s_4f44ffbc",
+        "s_97f83216"
+      ],
+      [
+        "s_97f83216",
+        "s_97f83216"
+      ]
+    ]
+  },
+  {
+    "id": "flow_037",
+    "name": "Add new tab inside existing group",
+    "flow_path": "Edit tab group dialog (named) → Click New Tab in Group → New tab added to group, dialog closes",
+    "steps": [
+      {
+        "state": "s_97f83216",
+        "action": "CLICK(New Tab in Group)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_7cb6e907",
+        "action": null,
+        "assertion": "A new tab is created inside the group; window title shows 'Part of tab group' and group header is visible in tab bar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_97f83216",
+      "s_7cb6e907"
+    ],
+    "edges": [
+      [
+        "s_97f83216",
+        "s_7cb6e907"
+      ]
+    ]
+  },
+  {
+    "id": "flow_038",
+    "name": "Ungroup tab group dissolves all grouped tabs",
+    "flow_path": "Edit tab group dialog (named) → Click Ungroup → Group is dissolved, tabs remain ungrouped",
+    "steps": [
+      {
+        "state": "s_97f83216",
+        "action": "CLICK(Ungroup)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_e29d67e0",
+        "action": null,
+        "assertion": "Tab group is dissolved; all tabs remain open but are no longer part of a group; group header disappears from tab bar",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_97f83216",
+      "s_e29d67e0"
+    ],
+    "edges": [
+      [
+        "s_97f83216",
+        "s_e29d67e0"
+      ]
+    ]
+  },
+  {
+    "id": "flow_039",
+    "name": "Move tab group to new window",
+    "flow_path": "Edit tab group dialog → Click Move to new window → Group moves to new browser window",
+    "steps": [
+      {
+        "state": "s_4f44ffbc",
+        "action": "CLICK(Move to new window)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_7b23845d",
+        "action": null,
+        "assertion": "Tab group is moved to a new browser window; the grouped tab(s) appear in the new window with the group header, and original window retains remaining ungrouped tabs",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_4f44ffbc",
+      "s_7b23845d"
+    ],
+    "edges": [
+      [
+        "s_4f44ffbc",
+        "s_7b23845d"
+      ]
+    ]
+  },
+  {
+    "id": "flow_040",
+    "name": "Full tab group lifecycle: create, rename, add tab, ungroup",
+    "flow_path": "Right-click → Add to New Group → Rename group → Add Tab in Group → Reopen edit dialog → Ungroup",
+    "steps": [
+      {
+        "state": "s_8e6fe812",
+        "action": "CLICK(Add Tab to New Group)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_4f44ffbc",
+        "action": "TYPE(Tab-group title, MyGroup)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_97f83216",
+        "action": "CLICK(New Tab in Group)",
+        "assertion": null,
+        "shortcut_alternative": null
+      },
+      {
+        "state": "s_7cb6e907",
+        "action": null,
+        "assertion": "Tab group 'MyGroup' now has multiple tabs; group can be reopened via right-click on group header to access Ungroup, Close Grouped Tabs, or Delete Group options",
+        "shortcut_alternative": null
+      }
+    ],
+    "path": [
+      "s_8e6fe812",
+      "s_4f44ffbc",
+      "s_97f83216",
+      "s_7cb6e907"
+    ],
+    "edges": [
+      [
+        "s_8e6fe812",
+        "s_4f44ffbc"
+      ],
+      [
+        "s_4f44ffbc",
+        "s_97f83216"
+      ],
+      [
+        "s_97f83216",
+        "s_7cb6e907"
+      ]
+    ]
+  }
+]

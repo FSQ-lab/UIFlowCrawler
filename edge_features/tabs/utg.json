@@ -1,0 +1,730 @@
+{
+  "app_name": "Microsoft Edge",
+  "start_state": "s_0b844a64",
+  "states": {
+    "s_0b844a64": {
+      "window_title": "New Tab Page with Single Tab",
+      "interactive_elements_count": 18,
+      "screenshot": "states/s_0b844a64.png"
+    },
+    "s_bfe22bc3": {
+      "window_title": "New Tab Page with Five Plus Tabs and Favorites Bar",
+      "interactive_elements_count": 51,
+      "screenshot": "states/s_bfe22bc3.png"
+    },
+    "s_d41d8cd9": {
+      "window_title": "Empty Window All Tabs Closed",
+      "interactive_elements_count": 0,
+      "screenshot": "states/s_d41d8cd9.png"
+    },
+    "s_0e751043": {
+      "window_title": "New Tab Page with Two Tabs",
+      "interactive_elements_count": 55,
+      "screenshot": "states/s_0e751043.png"
+    },
+    "s_8954178e": {
+      "window_title": "Single Tab After Closing Second Tab",
+      "interactive_elements_count": 53,
+      "screenshot": "states/s_8954178e.png"
+    },
+    "s_dd1da78d": {
+      "window_title": "New Tab Page with Three Tabs",
+      "interactive_elements_count": 57,
+      "screenshot": "states/s_dd1da78d.png"
+    },
+    "s_93177eaa": {
+      "window_title": "New Tab Page with Four Tabs",
+      "interactive_elements_count": 59,
+      "screenshot": "states/s_93177eaa.png"
+    },
+    "s_0d489eef": {
+      "window_title": "New Tab Page with Five Tabs",
+      "interactive_elements_count": 61,
+      "screenshot": "states/s_0d489eef.png"
+    },
+    "s_bd2359bd": {
+      "window_title": "Search Tabs Dropdown with Two Tabs",
+      "interactive_elements_count": 61,
+      "screenshot": "states/s_bd2359bd.png"
+    },
+    "s_82772d92": {
+      "window_title": "Vertical Tabs Sidebar Expanded",
+      "interactive_elements_count": 59,
+      "screenshot": "states/s_82772d92.png"
+    },
+    "s_c123973c": {
+      "window_title": "Organize Tabs Dialog with Suggested Groups",
+      "interactive_elements_count": 63,
+      "screenshot": "states/s_c123973c.png"
+    },
+    "s_16a9cfd6": {
+      "window_title": "Page After Organize Tabs Dialog Closed",
+      "interactive_elements_count": 66,
+      "screenshot": "states/s_16a9cfd6.png"
+    },
+    "s_818620fa": {
+      "window_title": "[OOS] Organize Tabs Satisfaction Survey",
+      "interactive_elements_count": 73,
+      "screenshot": "states/s_818620fa.png"
+    },
+    "s_49405880": {
+      "window_title": "Vertical Tabs Sidebar Collapsed",
+      "interactive_elements_count": 62,
+      "screenshot": "states/s_49405880.png"
+    },
+    "s_90d51e58": {
+      "window_title": "Organize Tabs Dialog Variant After Cancel",
+      "interactive_elements_count": 72,
+      "screenshot": "states/s_90d51e58.png"
+    },
+    "s_8e6fe812": {
+      "window_title": "Tab Right-Click Context Menu with Five Tabs",
+      "interactive_elements_count": 75,
+      "screenshot": "states/s_8e6fe812.png"
+    },
+    "s_c08c1c95": {
+      "window_title": "Six Tabs with Hero Wars Page Open",
+      "interactive_elements_count": 35,
+      "screenshot": "states/s_c08c1c95.png"
+    },
+    "s_8bfcbd47": {
+      "window_title": "Vertical Tabs Collapsed with Two Tabs",
+      "interactive_elements_count": 52,
+      "screenshot": "states/s_8bfcbd47.png"
+    },
+    "s_51b9c229": {
+      "window_title": "Vertical Tabs Expanded with Two Tabs",
+      "interactive_elements_count": 54,
+      "screenshot": "states/s_51b9c229.png"
+    },
+    "s_073f9f17": {
+      "window_title": "Vertical Tabs Expanded with Three Tabs",
+      "interactive_elements_count": 55,
+      "screenshot": "states/s_073f9f17.png"
+    },
+    "s_669cc05d": {
+      "window_title": "Organize Tabs Dissatisfaction Feedback Options",
+      "interactive_elements_count": 62,
+      "screenshot": "states/s_669cc05d.png"
+    },
+    "s_def36f33": {
+      "window_title": "Vertical Tabs Collapsed with Tab Groups Applied",
+      "interactive_elements_count": 53,
+      "screenshot": "states/s_def36f33.png"
+    },
+    "s_ef86e7dd": {
+      "window_title": "Search Tabs Dropdown with Single Tab",
+      "interactive_elements_count": 57,
+      "screenshot": "states/s_ef86e7dd.png"
+    },
+    "s_06aaf1c9": {
+      "window_title": "Search Tabs Dropdown with Four Tabs",
+      "interactive_elements_count": 61,
+      "screenshot": "states/s_06aaf1c9.png"
+    },
+    "s_5039b59e": {
+      "window_title": "Seven Tabs After New Tab to the Right",
+      "interactive_elements_count": 63,
+      "screenshot": "states/s_5039b59e.png"
+    },
+    "s_70deaef7": {
+      "window_title": "Six Tabs After Closing One Depth Limited",
+      "interactive_elements_count": 61,
+      "screenshot": "states/s_70deaef7.png"
+    },
+    "s_9a1a20ff": {
+      "window_title": "Eight Tabs After New Tab Depth Limited",
+      "interactive_elements_count": 65,
+      "screenshot": "states/s_9a1a20ff.png"
+    },
+    "s_5fea60ed": {
+      "window_title": "Vertical Tabs Sidebar Pinned with Three Tabs",
+      "interactive_elements_count": 55,
+      "screenshot": "states/s_5fea60ed.png"
+    },
+    "s_b1170660": {
+      "window_title": "Organize Tabs Not All Grouped Feedback Dialog",
+      "interactive_elements_count": 60,
+      "screenshot": "states/s_b1170660.png"
+    },
+    "s_88a7187f": {
+      "window_title": "Blank Tab Bar Right-Click Context Menu",
+      "interactive_elements_count": 61,
+      "screenshot": "states/s_88a7187f.png"
+    },
+    "s_6027411d": {
+      "window_title": "Two Tabs After New Tab from Blank Area Context Menu",
+      "interactive_elements_count": 55,
+      "screenshot": "states/s_6027411d.png"
+    },
+    "s_4f44ffbc": {
+      "window_title": "Edit Tab Group Dialog Unnamed Group",
+      "interactive_elements_count": 74,
+      "screenshot": "states/s_4f44ffbc.png"
+    },
+    "s_97f83216": {
+      "window_title": "Edit Tab Group Dialog with MyGroup Named",
+      "interactive_elements_count": 68,
+      "screenshot": "states/s_97f83216.png"
+    },
+    "s_7cb6e907": {
+      "window_title": "Tab Group with New Tab Added Inside Group",
+      "interactive_elements_count": 52,
+      "screenshot": "states/s_7cb6e907.png"
+    },
+    "s_e29d67e0": {
+      "window_title": "Tabs After Ungrouping Tab Group",
+      "interactive_elements_count": 55,
+      "screenshot": "states/s_e29d67e0.png"
+    },
+    "s_7b23845d": {
+      "window_title": "[OOS] Tab Group Moved to New Window",
+      "interactive_elements_count": 103,
+      "screenshot": "states/s_7b23845d.png"
+    }
+  },
+  "transitions": [
+    {
+      "from": "s_0b844a64",
+      "to": "s_bfe22bc3",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_0b844a64",
+      "to": "s_d41d8cd9",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_0b844a64",
+      "to": "s_d41d8cd9",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_0b844a64",
+      "to": "s_0e751043",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_0e751043",
+      "to": "s_8954178e",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_0e751043",
+      "to": "s_0e751043",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_0e751043",
+      "to": "s_8954178e",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_0e751043",
+      "to": "s_dd1da78d",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_dd1da78d",
+      "to": "s_dd1da78d",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_dd1da78d",
+      "to": "s_0e751043",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_dd1da78d",
+      "to": "s_93177eaa",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_93177eaa",
+      "to": "s_93177eaa",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_93177eaa",
+      "to": "s_dd1da78d",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_93177eaa",
+      "to": "s_0d489eef",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_0e751043",
+      "to": "s_bd2359bd",
+      "action": "CLICK(Search tabs)"
+    },
+    {
+      "from": "s_bd2359bd",
+      "to": "s_82772d92",
+      "action": "CLICK(Turn On Vertical Tabs)"
+    },
+    {
+      "from": "s_82772d92",
+      "to": "s_dd1da78d",
+      "action": "CLICK(Turn Off Vertical Tabs)"
+    },
+    {
+      "from": "s_bd2359bd",
+      "to": "s_c123973c",
+      "action": "CLICK(Organize Tabs)"
+    },
+    {
+      "from": "s_bd2359bd",
+      "to": "s_bd2359bd",
+      "action": "CLICK(Open Tabs)"
+    },
+    {
+      "from": "s_bd2359bd",
+      "to": "s_bd2359bd",
+      "action": "CLICK(Recently Closed)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_16a9cfd6",
+      "action": "CLICK(Close)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_16a9cfd6",
+      "action": "CLICK(Group Tabs)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_16a9cfd6",
+      "action": "CLICK(Cancel)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_818620fa",
+      "action": "CLICK(I'm Satisfied With The Suggestions)"
+    },
+    {
+      "from": "s_82772d92",
+      "to": "s_49405880",
+      "action": "CLICK(Collapse pane)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_90d51e58",
+      "action": "CLICK(Cancel)"
+    },
+    {
+      "from": "s_0d489eef",
+      "to": "s_8e6fe812",
+      "action": "RIGHT_CLICK(New Tab)"
+    },
+    {
+      "from": "s_0d489eef",
+      "to": "s_c08c1c95",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_0d489eef",
+      "to": "s_c08c1c95",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_0d489eef",
+      "to": "s_93177eaa",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_0d489eef",
+      "to": "s_93177eaa",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_82772d92",
+      "to": "s_8bfcbd47",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_82772d92",
+      "to": "s_51b9c229",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_82772d92",
+      "to": "s_073f9f17",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_669cc05d",
+      "action": "CLICK(I'm Not Satisfied With The Suggestions)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_669cc05d",
+      "action": "CLICK(I'm Not Satisfied With The Suggestions)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_669cc05d",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_c123973c",
+      "to": "s_def36f33",
+      "action": "CLICK(Group Tabs)"
+    },
+    {
+      "from": "s_0b844a64",
+      "to": "s_ef86e7dd",
+      "action": "CLICK(Search tabs)"
+    },
+    {
+      "from": "s_93177eaa",
+      "to": "s_06aaf1c9",
+      "action": "CLICK(Search tabs)"
+    },
+    {
+      "from": "s_bfe22bc3",
+      "to": "s_ef86e7dd",
+      "action": "CLICK(Search tabs)"
+    },
+    {
+      "from": "s_8e6fe812",
+      "to": "s_5039b59e",
+      "action": "CLICK(New Tab to the Right)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_70deaef7",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_5039b59e",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_70deaef7",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_5039b59e",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_70deaef7",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_5039b59e",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_70deaef7",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_5039b59e",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_70deaef7",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_5039b59e",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_70deaef7",
+      "action": "CLICK(Close tab)"
+    },
+    {
+      "from": "s_5039b59e",
+      "to": "s_9a1a20ff",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_8bfcbd47",
+      "to": "s_def36f33",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_51b9c229",
+      "to": "s_5fea60ed",
+      "action": "CLICK(Pin pane)"
+    },
+    {
+      "from": "s_669cc05d",
+      "to": "s_b1170660",
+      "action": "CLICK(Not All Of My Tabs Are Grouped)"
+    },
+    {
+      "from": "s_0b844a64",
+      "to": "s_88a7187f",
+      "action": "RIGHT_CLICK(Tab bar)"
+    },
+    {
+      "from": "s_88a7187f",
+      "to": "s_6027411d",
+      "action": "CLICK(New Tab)"
+    },
+    {
+      "from": "s_8e6fe812",
+      "to": "s_4f44ffbc",
+      "action": "CLICK(Add Tab to New Group)"
+    },
+    {
+      "from": "s_4f44ffbc",
+      "to": "s_97f83216",
+      "action": "TYPE(Tab-group title, MyGroup)"
+    },
+    {
+      "from": "s_97f83216",
+      "to": "s_97f83216",
+      "action": "CLICK(Pink)"
+    },
+    {
+      "from": "s_97f83216",
+      "to": "s_7cb6e907",
+      "action": "CLICK(New Tab in Group)"
+    },
+    {
+      "from": "s_97f83216",
+      "to": "s_e29d67e0",
+      "action": "CLICK(Ungroup)"
+    },
+    {
+      "from": "s_4f44ffbc",
+      "to": "s_7b23845d",
+      "action": "CLICK(Move to new window)"
+    }
+  ],
+  "edges": [
+    [
+      "s_0b844a64",
+      "s_bfe22bc3"
+    ],
+    [
+      "s_0b844a64",
+      "s_d41d8cd9"
+    ],
+    [
+      "s_0b844a64",
+      "s_0e751043"
+    ],
+    [
+      "s_0e751043",
+      "s_8954178e"
+    ],
+    [
+      "s_0e751043",
+      "s_0e751043"
+    ],
+    [
+      "s_0e751043",
+      "s_dd1da78d"
+    ],
+    [
+      "s_dd1da78d",
+      "s_dd1da78d"
+    ],
+    [
+      "s_dd1da78d",
+      "s_0e751043"
+    ],
+    [
+      "s_dd1da78d",
+      "s_93177eaa"
+    ],
+    [
+      "s_93177eaa",
+      "s_93177eaa"
+    ],
+    [
+      "s_93177eaa",
+      "s_dd1da78d"
+    ],
+    [
+      "s_93177eaa",
+      "s_0d489eef"
+    ],
+    [
+      "s_0e751043",
+      "s_bd2359bd"
+    ],
+    [
+      "s_bd2359bd",
+      "s_82772d92"
+    ],
+    [
+      "s_82772d92",
+      "s_dd1da78d"
+    ],
+    [
+      "s_bd2359bd",
+      "s_c123973c"
+    ],
+    [
+      "s_bd2359bd",
+      "s_bd2359bd"
+    ],
+    [
+      "s_c123973c",
+      "s_16a9cfd6"
+    ],
+    [
+      "s_c123973c",
+      "s_818620fa"
+    ],
+    [
+      "s_82772d92",
+      "s_49405880"
+    ],
+    [
+      "s_c123973c",
+      "s_90d51e58"
+    ],
+    [
+      "s_0d489eef",
+      "s_8e6fe812"
+    ],
+    [
+      "s_0d489eef",
+      "s_c08c1c95"
+    ],
+    [
+      "s_0d489eef",
+      "s_93177eaa"
+    ],
+    [
+      "s_82772d92",
+      "s_8bfcbd47"
+    ],
+    [
+      "s_82772d92",
+      "s_51b9c229"
+    ],
+    [
+      "s_82772d92",
+      "s_073f9f17"
+    ],
+    [
+      "s_c123973c",
+      "s_669cc05d"
+    ],
+    [
+      "s_c123973c",
+      "s_def36f33"
+    ],
+    [
+      "s_0b844a64",
+      "s_ef86e7dd"
+    ],
+    [
+      "s_93177eaa",
+      "s_06aaf1c9"
+    ],
+    [
+      "s_bfe22bc3",
+      "s_ef86e7dd"
+    ],
+    [
+      "s_8e6fe812",
+      "s_5039b59e"
+    ],
+    [
+      "s_5039b59e",
+      "s_70deaef7"
+    ],
+    [
+      "s_5039b59e",
+      "s_5039b59e"
+    ],
+    [
+      "s_5039b59e",
+      "s_9a1a20ff"
+    ],
+    [
+      "s_8bfcbd47",
+      "s_def36f33"
+    ],
+    [
+      "s_51b9c229",
+      "s_5fea60ed"
+    ],
+    [
+      "s_669cc05d",
+      "s_b1170660"
+    ],
+    [
+      "s_0b844a64",
+      "s_88a7187f"
+    ],
+    [
+      "s_88a7187f",
+      "s_6027411d"
+    ],
+    [
+      "s_8e6fe812",
+      "s_4f44ffbc"
+    ],
+    [
+      "s_4f44ffbc",
+      "s_97f83216"
+    ],
+    [
+      "s_97f83216",
+      "s_97f83216"
+    ],
+    [
+      "s_97f83216",
+      "s_7cb6e907"
+    ],
+    [
+      "s_97f83216",
+      "s_e29d67e0"
+    ],
+    [
+      "s_4f44ffbc",
+      "s_7b23845d"
+    ]
+  ],
+  "shortcuts": [
+    {
+      "shortcut": "⌘T",
+      "label": "New Tab",
+      "type": "keyboard",
+      "source": "exploration_context"
+    },
+    {
+      "shortcut": "⌘W",
+      "label": "Close Tab",
+      "type": "keyboard",
+      "source": "exploration_context"
+    },
+    {
+      "shortcut": "⌘⇧T",
+      "label": "Reopen Closed Tab",
+      "type": "keyboard",
+      "source": "exploration_context"
+    }
+  ],
+  "stats": {
+    "total_states": 36,
+    "total_transitions": 65,
+    "total_actions": 65,
+    "explored_pairs": 2242,
+    "elapsed_seconds": 239254
+  }
+}
