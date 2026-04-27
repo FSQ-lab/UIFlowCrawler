@@ -12,6 +12,7 @@ Commands:
   record     Record the result of an action (transition + new state if any).
   skip       Mark a single element as skipped (with reason, stored separately).
   status     Show exploration progress summary.
+  supplement Record a supplemental action into utg.json (post-finalization).
 
 Usage:
   # 1. Initialize with first page_source
@@ -888,6 +889,104 @@ def cmd_rename_state(args):
     print(json.dumps({"renamed": state_id, "old_title": old_title, "new_title": args.title}))
 
 
+def cmd_supplement(args):
+    """Record a supplemental action result directly into utg.json.
+
+    Used after exploration is done (advisor status=done) to add new transitions
+    (e.g., drag operations) without resetting the exploration state.
+    """
+    output_dir = Path(args.output_dir)
+    utg_path = output_dir / "utg.json"
+
+    if not utg_path.exists():
+        print(json.dumps({"status": "error", "message": "utg.json not found. Run finalize first."}))
+        return
+
+    utg = json.loads(utg_path.read_text(encoding="utf-8"))
+    from_state = args.from_state
+    action = args.action
+
+    # Validate from_state exists in utg
+    if from_state not in utg.get("states", {}):
+        print(json.dumps({"status": "error", "message": f"State {from_state} not found in utg.json"}))
+        return
+
+    # Build hash→id mapping from state detail files
+    hash_to_id = {}
+    for sid in utg["states"]:
+        detail = load_state_detail(output_dir, sid)
+        if detail:
+            hash_to_id[detail.get("state_hash", "")] = sid
+
+    # Get from_state's hash
+    from_detail = load_state_detail(output_dir, from_state)
+    from_hash = from_detail.get("state_hash", "")
+
+    # Normalize the new page source
+    xml_str = Path(args.page_source).read_text(encoding="utf-8")
+    info = normalize(xml_str)
+    new_hash = info["state_hash"]
+    new_id = info["state_id"]
+
+    # Determine outcome
+    if new_hash == from_hash:
+        # Same state — no visible change
+        utg["transitions"].append({"from": from_state, "to": from_state, "action": action})
+        outcome = {"result": "same_state", "state_id": from_state}
+
+    elif new_hash in hash_to_id:
+        # Known state
+        existing_id = hash_to_id[new_hash]
+        utg["transitions"].append({"from": from_state, "to": existing_id, "action": action})
+        # Add edge if new
+        edge_pair = [from_state, existing_id]
+        if edge_pair not in utg.get("edges", []):
+            utg.setdefault("edges", []).append(edge_pair)
+        outcome = {"result": "known_state", "state_id": existing_id}
+
+    else:
+        # New state
+        title = info.get("ui_tree", {}).get("label", "") or f"State {new_id}"
+        save_state_detail(output_dir, new_id, {
+            "state_id": new_id,
+            "state_hash": new_hash,
+            "window_title": title,
+            "interactive_elements": info["interactive_elements"],
+            "interactive_elements_count": info["interactive_elements_count"],
+            "ui_tree": info.get("ui_tree"),
+            "screenshot": f"states/{new_id}.png",
+        })
+        utg["states"][new_id] = {
+            "window_title": title,
+            "interactive_elements_count": info["interactive_elements_count"],
+            "screenshot": f"states/{new_id}.png",
+            "title": title,
+        }
+        utg["transitions"].append({"from": from_state, "to": new_id, "action": action})
+        utg.setdefault("edges", []).append([from_state, new_id])
+        # Save any shortcuts discovered
+        if info.get("shortcuts"):
+            append_shortcuts_raw(output_dir, info["shortcuts"], new_id)
+        outcome = {"result": "new_state", "state_id": new_id}
+
+    # Update stats
+    stats = utg.get("stats", {})
+    stats["total_states"] = len(utg.get("states", {}))
+    stats["total_transitions"] = len(utg.get("transitions", []))
+    stats["total_actions"] = stats.get("total_actions", 0) + 1
+    utg["stats"] = stats
+
+    # Save utg.json
+    utg_path.write_text(json.dumps(utg, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    print(json.dumps({
+        "status": "recorded",
+        "from_state": from_state,
+        "action": action,
+        **outcome,
+    }, indent=2, ensure_ascii=False))
+
+
 def cmd_finalize(args):
     """Generate utg.json from current state."""
     output_dir = Path(args.output_dir)
@@ -1073,6 +1172,14 @@ def main():
     p_rename.add_argument("--state", required=True, help="State ID to rename")
     p_rename.add_argument("--title", required=True, help="New descriptive title")
 
+    # supplement
+    p_sup = sub.add_parser("supplement", help="Record supplemental action into utg.json (post-finalization)")
+    p_sup.add_argument("--output-dir", default="e2e_output", help="Output directory")
+    p_sup.add_argument("--from-state", required=True, help="State ID where action was executed")
+    p_sup.add_argument("--action", required=True, help="Action description, e.g. DRAG(Tab1→Tab2)")
+    p_sup.add_argument("--page-source", required=True, help="Path to resulting page_source XML file")
+    p_sup.add_argument("--label", default="", help="Element label")
+
     args = parser.parse_args()
 
     handlers = {
@@ -1087,6 +1194,7 @@ def main():
         "verify-state": cmd_verify_state,
         "finalize": cmd_finalize,
         "rename-state": cmd_rename_state,
+        "supplement": cmd_supplement,
     }
     handlers[args.command](args)
 

@@ -67,6 +67,7 @@ DRAG_TYPES = {
     "XCUIElementTypeImage",
     "XCUIElementTypeOutlineRow",
     "XCUIElementTypeTableRow",
+    "XCUIElementTypeTab",
 }
 
 TEXT_FIELD_TYPES = {
