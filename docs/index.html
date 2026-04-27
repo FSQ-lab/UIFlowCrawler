@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UIFlowCrawler — LLM-Driven E2E Test Coverage for macOS</title>
+<meta name="description" content="An LLM-driven black-box E2E test coverage tool for macOS apps. Systematically explores ALL UI states and generates BDD Gherkin test cases.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Custom Properties ── */
+:root {
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --max-w: 1120px;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  --bg: #0b1120;
+  --bg-surface: #111827;
+  --bg-card: #1a2332;
+  --bg-code: #0d1525;
+  --border: #1e2d3d;
+  --border-accent: #2dd4bf33;
+  --text: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #2dd4bf;
+  --accent2: #38bdf8;
+  --accent3: #a78bfa;
+  --gradient: linear-gradient(135deg, #2dd4bf, #38bdf8, #a78bfa);
+  --gradient-bg: linear-gradient(180deg, #0b1120 0%, #111827 100%);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 48px rgba(0,0,0,0.5);
+  --glow: 0 0 40px rgba(45,212,191,0.15);
+}
+
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-code: #f1f5f9;
+  --border: #e2e8f0;
+  --border-accent: #0d948833;
+  --text: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --accent: #0d9488;
+  --accent2: #0284c7;
+  --accent3: #7c3aed;
+  --gradient: linear-gradient(135deg, #0d9488, #0284c7, #7c3aed);
+  --gradient-bg: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 48px rgba(0,0,0,0.12);
+  --glow: 0 0 40px rgba(13,148,136,0.1);
+}
+
+/* ── Base ── */
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  transition: background var(--transition), color var(--transition);
+  overflow-x: hidden;
+}
+a { color: var(--accent); text-decoration: none; transition: color var(--transition); }
+a:hover { color: var(--accent2); }
+img { max-width: 100%; }
+
+/* ── Layout ── */
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+section { padding: 80px 0; }
+@media (max-width: 640px) { section { padding: 48px 0; } }
+
+/* ── Typography ── */
+h1, h2, h3, h4 { font-weight: 700; line-height: 1.2; }
+h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin-bottom: 16px; }
+.section-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.section-desc {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin-bottom: 48px;
+}
+
+/* ── Fade-in animation ── */
+.fade-in {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-in { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background var(--transition), border var(--transition);
+}
+[data-theme="dark"] nav { background: rgba(11,17,32,0.85); }
+[data-theme="light"] nav { background: rgba(248,250,252,0.85); }
+.nav-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-logo span {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.nav-links { display: flex; align-items: center; gap: 24px; }
+.nav-links a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color var(--transition);
+}
+.nav-links a:hover { color: var(--accent); }
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all var(--transition);
+}
+.theme-toggle:hover { border-color: var(--accent); background: var(--bg-surface); }
+@media (max-width: 768px) {
+  .nav-links a:not(.theme-toggle-wrapper) { display: none; }
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 140px 0 80px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(45,212,191,0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero h1 {
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+}
+.hero h1 .gradient-text {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-subtitle {
+  font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+  color: var(--text-secondary);
+  max-width: 680px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
+}
+.hero-badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+.badge:hover { border-color: var(--accent); box-shadow: var(--glow); }
+.badge-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.badge-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.hero-cta { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.95rem;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--transition);
+  border: none;
+}
+.btn-primary {
+  background: var(--gradient);
+  color: #0b1120;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: var(--glow); }
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── TLDR ── */
+.tldr-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius);
+  padding: 32px;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  position: relative;
+}
+.tldr-box strong { color: var(--accent); font-weight: 600; }
+
+/* ── Problem ── */
+.problem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+.problem-card {
+  padding: 28px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+.problem-card:hover { border-color: var(--accent); box-shadow: var(--glow); }
+.problem-card .icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+  background: rgba(45,212,191,0.1);
+}
+.problem-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+.problem-card p { font-size: 0.925rem; color: var(--text-secondary); }
+
+/* ── Architecture SVG ── */
+.arch-svg-wrap {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 16px;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+}
+.arch-svg-wrap svg { max-width: 100%; height: auto; }
+[data-theme="dark"] .arch-svg-wrap text { fill: #e2e8f0; }
+[data-theme="light"] .arch-svg-wrap text { fill: #1e293b; }
+[data-theme="dark"] .arch-svg-wrap .svg-box { fill: #1a2332; stroke: #2dd4bf; }
+[data-theme="light"] .arch-svg-wrap .svg-box { fill: #ffffff; stroke: #0d9488; }
+[data-theme="dark"] .arch-svg-wrap .svg-box2 { fill: #1a2332; stroke: #38bdf8; }
+[data-theme="light"] .arch-svg-wrap .svg-box2 { fill: #ffffff; stroke: #0284c7; }
+[data-theme="dark"] .arch-svg-wrap .svg-box3 { fill: #1a2332; stroke: #a78bfa; }
+[data-theme="light"] .arch-svg-wrap .svg-box3 { fill: #ffffff; stroke: #7c3aed; }
+[data-theme="dark"] .arch-svg-wrap .svg-arrow { stroke: #475569; }
+[data-theme="light"] .arch-svg-wrap .svg-arrow { stroke: #94a3b8; }
+[data-theme="dark"] .arch-svg-wrap .svg-label { fill: #64748b; }
+[data-theme="light"] .arch-svg-wrap .svg-label { fill: #94a3b8; }
+[data-theme="dark"] .arch-svg-wrap .svg-output { fill: #111827; stroke: #1e2d3d; }
+[data-theme="light"] .arch-svg-wrap .svg-output { fill: #f1f5f9; stroke: #e2e8f0; }
+
+/* ── Pipeline ── */
+.pipeline-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+.pipeline-card {
+  padding: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative;
+  transition: all var(--transition);
+}
+.pipeline-card:hover { border-color: var(--accent); box-shadow: var(--glow); transform: translateY(-2px); }
+.pipeline-number {
+  font-size: 3rem;
+  font-weight: 900;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.pipeline-card h3 { font-size: 1.25rem; margin-bottom: 12px; }
+.pipeline-card p { color: var(--text-secondary); font-size: 0.925rem; margin-bottom: 16px; }
+.pipeline-card ul { list-style: none; padding: 0; }
+.pipeline-card li {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  padding-left: 20px;
+  position: relative;
+}
+.pipeline-card li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+/* ── Mechanisms ── */
+.mech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+.mech-item {
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+.mech-item:hover { border-color: var(--accent); }
+.mech-item h3 { font-size: 1rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.mech-item h3 .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.mech-item p { font-size: 0.875rem; color: var(--text-secondary); }
+
+/* ── Results ── */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  margin-bottom: 48px;
+}
+.result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  text-align: center;
+  transition: all var(--transition);
+}
+.result-card:hover { border-color: var(--accent); box-shadow: var(--glow); }
+.result-card h3 { font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+.result-stat { font-size: 2.5rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.result-card p { font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; }
+
+/* ── Principles ── */
+.principle-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.principle-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.principle-table th, .principle-table td {
+  text-align: left;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.principle-table th {
+  background: var(--bg-card);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.principle-table td { color: var(--text-secondary); }
+.principle-table tr:last-child td { border-bottom: none; }
+.principle-table tr:hover td { background: var(--bg-card); }
+.principle-table .label-prompt {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.principle-table .label-code { color: var(--accent); font-weight: 600; }
+
+/* ── Quick Start ── */
+.qs-steps {
+  display: grid;
+  gap: 24px;
+}
+.qs-step {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  transition: all var(--transition);
+}
+.qs-step:hover { border-color: var(--accent); }
+.qs-step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.qs-step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gradient);
+  color: #0b1120;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.qs-step h3 { font-size: 1rem; }
+.code-block {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  overflow-x: auto;
+  white-space: pre;
+}
+.code-block .comment { color: var(--text-muted); }
+.code-block .cmd { color: var(--accent); }
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+footer a { color: var(--text-secondary); }
+footer a:hover { color: var(--accent); }
+.footer-links { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; }
+
+/* ── Utilities ── */
+.mt-48 { margin-top: 48px; }
+.text-center { text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo"><span>UIFlowCrawler</span></div>
+    <div class="nav-links">
+      <a href="#pipeline">Pipeline</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#results">Results</a>
+      <a href="#quickstart">Quick Start</a>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <span id="themeIcon">&#9790;</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="container">
+    <h1 class="fade-in"><span class="gradient-text">UIFlowCrawler</span></h1>
+    <p class="hero-subtitle fade-in">
+      LLM-driven black-box E2E test coverage for macOS apps.<br>
+      Systematically discovers <strong>all</strong> UI states and generates BDD Gherkin test cases with algorithm-guaranteed completeness.
+    </p>
+    <div class="hero-badges fade-in">
+      <div class="badge">
+        <span class="badge-value">Auto</span>
+        <span class="badge-label">State Discovery</span>
+      </div>
+      <div class="badge">
+        <span class="badge-value">100%</span>
+        <span class="badge-label">Transition Coverage</span>
+      </div>
+      <div class="badge">
+        <span class="badge-value">BDD</span>
+        <span class="badge-label">Test Generation</span>
+      </div>
+      <div class="badge">
+        <span class="badge-value">Zero</span>
+        <span class="badge-label">Manual Scripting</span>
+      </div>
+    </div>
+    <div class="hero-cta fade-in">
+      <a href="#quickstart" class="btn btn-primary">Get Started</a>
+      <a href="https://github.com" class="btn btn-secondary">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── TL;DR ── -->
+<section id="tldr">
+  <div class="container">
+    <div class="tldr-box fade-in">
+      <strong>TL;DR</strong> &mdash; Unlike traditional UI testing agents that execute predefined tasks, UIFlowCrawler systematically explores <strong>every</strong> UI state in your macOS app. A <strong>Python advisor algorithm</strong> (not the LLM) controls exploration order, guaranteeing completeness. The LLM only decides <strong>how</strong> to execute each action. The result: a complete state transition graph, optimized test flows, and production-ready BDD Gherkin test cases &mdash; all fully automated.
+    </div>
+  </div>
+</section>
+
+<!-- ── Problem ── -->
+<section id="problem">
+  <div class="container">
+    <span class="section-label fade-in">The Problem</span>
+    <h2 class="fade-in">Why existing approaches fall short</h2>
+    <p class="section-desc fade-in">Manual E2E testing is slow and incomplete. LLM-based agents are creative but unreliable for systematic coverage. UIFlowCrawler combines the best of both worlds.</p>
+    <div class="problem-grid">
+      <div class="problem-card fade-in">
+        <div class="icon">&#9881;</div>
+        <h3>Manual Testing</h3>
+        <p>Testers follow predefined scripts. Coverage depends on what they think to test. Unknown states remain undiscovered.</p>
+      </div>
+      <div class="problem-card fade-in">
+        <div class="icon">&#10070;</div>
+        <h3>LLM-Only Agents</h3>
+        <p>LLMs choose what to explore next. They get stuck in loops, miss branches, and have no completeness guarantee.</p>
+      </div>
+      <div class="problem-card fade-in">
+        <div class="icon">&#10003;</div>
+        <h3>UIFlowCrawler</h3>
+        <p>Algorithm decides <em>what</em> to explore. LLM decides <em>how</em> to act. Code enforces loop prevention and coverage tracking.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Architecture ── -->
+<section id="architecture">
+  <div class="container">
+    <span class="section-label fade-in">Architecture</span>
+    <h2 class="fade-in">How it all connects</h2>
+    <p class="section-desc fade-in">Claude Code orchestrates exploration through Appium MCP while the Python advisor controls strategy.</p>
+    <div class="arch-svg-wrap fade-in">
+      <svg viewBox="0 0 820 520" width="820" height="520" xmlns="http://www.w3.org/2000/svg" font-family="Inter, -apple-system, sans-serif">
+        <defs>
+          <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" class="svg-arrow" fill="currentColor"/></marker>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+
+        <!-- Claude Code -->
+        <rect class="svg-box" x="20" y="30" width="220" height="80" rx="12" stroke-width="2"/>
+        <text x="130" y="65" text-anchor="middle" font-weight="700" font-size="15">Claude Code</text>
+        <text x="130" y="85" text-anchor="middle" font-size="11" class="svg-label">LLM Orchestrator (REPL)</text>
+
+        <!-- Skill Prompts -->
+        <rect class="svg-box3" x="300" y="30" width="220" height="80" rx="12" stroke-width="2"/>
+        <text x="410" y="65" text-anchor="middle" font-weight="700" font-size="15">Skill Prompts</text>
+        <text x="410" y="85" text-anchor="middle" font-size="11" class="svg-label">.claude/commands/*.md</text>
+
+        <!-- Appium MCP -->
+        <rect class="svg-box2" x="580" y="30" width="220" height="80" rx="12" stroke-width="2"/>
+        <text x="690" y="65" text-anchor="middle" font-weight="700" font-size="15">Appium MCP</text>
+        <text x="690" y="85" text-anchor="middle" font-size="11" class="svg-label">UI Automation Server</text>
+
+        <!-- macOS App -->
+        <rect class="svg-box2" x="580" y="180" width="220" height="80" rx="12" stroke-width="2"/>
+        <text x="690" y="215" text-anchor="middle" font-weight="700" font-size="15">macOS App</text>
+        <text x="690" y="235" text-anchor="middle" font-size="11" class="svg-label">Target Under Test</text>
+
+        <!-- Python Advisor -->
+        <rect class="svg-box" x="20" y="180" width="220" height="80" rx="12" stroke-width="2"/>
+        <text x="130" y="215" text-anchor="middle" font-weight="700" font-size="15">Python Advisor</text>
+        <text x="130" y="235" text-anchor="middle" font-size="11" class="svg-label">advisor.py — Greedy Algorithm</text>
+
+        <!-- normalize.py -->
+        <rect class="svg-box3" x="300" y="180" width="220" height="80" rx="12" stroke-width="2"/>
+        <text x="410" y="215" text-anchor="middle" font-weight="700" font-size="15">State Fingerprint</text>
+        <text x="410" y="235" text-anchor="middle" font-size="11" class="svg-label">normalize.py — MD5 Hash</text>
+
+        <!-- Arrows: Claude → Skills -->
+        <line class="svg-arrow" x1="240" y1="70" x2="296" y2="70" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="268" y="62" text-anchor="middle" font-size="9" class="svg-label">loads</text>
+
+        <!-- Arrows: Skills → Appium -->
+        <line class="svg-arrow" x1="520" y1="70" x2="576" y2="70" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="548" y="62" text-anchor="middle" font-size="9" class="svg-label">MCP calls</text>
+
+        <!-- Appium → App -->
+        <line class="svg-arrow" x1="690" y1="110" x2="690" y2="176" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="710" y="148" font-size="9" class="svg-label">drives</text>
+
+        <!-- Claude → Advisor -->
+        <line class="svg-arrow" x1="130" y1="110" x2="130" y2="176" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="148" y="148" font-size="9" class="svg-label">next target</text>
+
+        <!-- Advisor → Normalize -->
+        <line class="svg-arrow" x1="240" y1="220" x2="296" y2="220" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <text x="268" y="212" text-anchor="middle" font-size="9" class="svg-label">hashes</text>
+
+        <!-- Outputs row -->
+        <rect class="svg-output" x="20" y="330" width="160" height="60" rx="10" stroke-width="1.5"/>
+        <text x="100" y="355" text-anchor="middle" font-weight="600" font-size="13">utg.json</text>
+        <text x="100" y="372" text-anchor="middle" font-size="10" class="svg-label">State Graph</text>
+
+        <rect class="svg-output" x="220" y="330" width="160" height="60" rx="10" stroke-width="1.5"/>
+        <text x="300" y="355" text-anchor="middle" font-weight="600" font-size="13">flows.json</text>
+        <text x="300" y="372" text-anchor="middle" font-size="10" class="svg-label">Test Flows</text>
+
+        <rect class="svg-output" x="420" y="330" width="180" height="60" rx="10" stroke-width="1.5"/>
+        <text x="510" y="355" text-anchor="middle" font-weight="600" font-size="13">.feature Files</text>
+        <text x="510" y="372" text-anchor="middle" font-size="10" class="svg-label">BDD Gherkin Cases</text>
+
+        <rect class="svg-output" x="640" y="330" width="160" height="60" rx="10" stroke-width="1.5"/>
+        <text x="720" y="355" text-anchor="middle" font-weight="600" font-size="13">report.html</text>
+        <text x="720" y="372" text-anchor="middle" font-size="10" class="svg-label">Interactive Report</text>
+
+        <!-- Arrow Advisor → utg -->
+        <line class="svg-arrow" x1="100" y1="260" x2="100" y2="326" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="6,3"/>
+        <!-- Arrow Claude → flows -->
+        <line class="svg-arrow" x1="300" y1="260" x2="300" y2="326" stroke-width="1.5" marker-end="url(#arrowhead)" stroke-dasharray="6,3"/>
+
+        <!-- Phase labels at bottom -->
+        <rect rx="6" x="60" y="430" width="140" height="32" fill="none" class="svg-box" stroke-width="1.5"/>
+        <text x="130" y="451" text-anchor="middle" font-weight="600" font-size="12">Phase 1: Explore</text>
+
+        <rect rx="6" x="260" y="430" width="140" height="32" fill="none" class="svg-box2" stroke-width="1.5"/>
+        <text x="330" y="451" text-anchor="middle" font-weight="600" font-size="12">Phase 2: Design</text>
+
+        <rect rx="6" x="460" y="430" width="160" height="32" fill="none" class="svg-box3" stroke-width="1.5"/>
+        <text x="540" y="451" text-anchor="middle" font-weight="600" font-size="12">Phase 3: Generate</text>
+
+        <!-- Phase arrows -->
+        <line class="svg-arrow" x1="200" y1="446" x2="256" y2="446" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line class="svg-arrow" x1="400" y1="446" x2="456" y2="446" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+
+        <!-- Dashed lines from outputs to phases -->
+        <line class="svg-arrow" x1="100" y1="390" x2="130" y2="426" stroke-width="1" stroke-dasharray="4,3"/>
+        <line class="svg-arrow" x1="300" y1="390" x2="330" y2="426" stroke-width="1" stroke-dasharray="4,3"/>
+        <line class="svg-arrow" x1="510" y1="390" x2="540" y2="426" stroke-width="1" stroke-dasharray="4,3"/>
+      </svg>
+    </div>
+    <div class="mech-grid mt-48">
+      <div class="mech-item fade-in">
+        <h3><span class="dot" style="background:var(--accent)"></span>Skill Prompts</h3>
+        <p><code>.claude/commands/</code> define the exploration and generation workflows as structured prompts for Claude Code.</p>
+      </div>
+      <div class="mech-item fade-in">
+        <h3><span class="dot" style="background:var(--accent2)"></span>Appium MCP Server</h3>
+        <p>Provides UI automation tools (click, type, get page source) as MCP functions the LLM can call directly.</p>
+      </div>
+      <div class="mech-item fade-in">
+        <h3><span class="dot" style="background:var(--accent3)"></span>Python Scripts</h3>
+        <p><code>advisor.py</code>, <code>normalize.py</code>, and <code>report.py</code> handle algorithmic logic, state fingerprinting, and report generation.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pipeline ── -->
+<section id="pipeline">
+  <div class="container">
+    <span class="section-label fade-in">Three-Phase Pipeline</span>
+    <h2 class="fade-in">From app launch to test cases</h2>
+    <p class="section-desc fade-in">Each phase has a distinct goal and produces concrete artifacts.</p>
+    <div class="pipeline-cards">
+      <div class="pipeline-card fade-in">
+        <div class="pipeline-number">01</div>
+        <h3>Explore</h3>
+        <p>Advisor-guided state discovery. The LLM interacts with the app while the algorithm ensures every reachable state and action is visited.</p>
+        <ul>
+          <li>MD5 fingerprinting of accessibility trees</li>
+          <li>Greedy selection of unexplored (state, action) pairs</li>
+          <li>Code-level visited set prevents loops</li>
+          <li>Outputs: utg.json, per-state screenshots and element data</li>
+        </ul>
+      </div>
+      <div class="pipeline-card fade-in">
+        <div class="pipeline-number">02</div>
+        <h3>Design</h3>
+        <p>Graph algorithms generate optimal test flows covering all discovered state transitions with minimal redundancy.</p>
+        <ul>
+          <li>Flow generation from state transition graph</li>
+          <li>Grouped by feature area</li>
+          <li>Covers all edges in the transition graph</li>
+          <li>Outputs: flows.json with grouped test flows</li>
+        </ul>
+      </div>
+      <div class="pipeline-card fade-in">
+        <div class="pipeline-number">03</div>
+        <h3>Generate</h3>
+        <p>BDD Gherkin test cases with separated Generator and Evaluator LLM calls to prevent self-serving bias.</p>
+        <ul>
+          <li>Happy path, error, and boundary scenarios</li>
+          <li>Generator writes, Evaluator reviews independently</li>
+          <li>Uses actual UI tree data for realistic steps</li>
+          <li>Outputs: .feature files + interactive HTML report</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Core Mechanisms ── -->
+<section id="mechanisms">
+  <div class="container">
+    <span class="section-label fade-in">Core Mechanisms</span>
+    <h2 class="fade-in">Engineering constraints into code</h2>
+    <p class="section-desc fade-in">Key design principle: move constraints from prompts to code for reliability.</p>
+    <div class="principle-table-wrap fade-in">
+      <table class="principle-table">
+        <thead>
+          <tr><th>Concern</th><th>Traditional</th><th>UIFlowCrawler</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Exploration order</td><td class="label-prompt">LLM prompt</td><td class="label-code">advisor.py algorithm</td></tr>
+          <tr><td>State identity</td><td class="label-prompt">LLM judgment</td><td class="label-code">MD5 fingerprint of normalized tree</td></tr>
+          <tr><td>Loop prevention</td><td class="label-prompt">LLM reflection</td><td class="label-code">Code-level visited set</td></tr>
+          <tr><td>Coverage tracking</td><td class="label-prompt">LLM memory</td><td class="label-code">Python data structures</td></tr>
+          <tr><td>Report generation</td><td class="label-prompt">LLM formatting</td><td class="label-code">report.py script</td></tr>
+          <tr><td>List deduplication</td><td class="label-prompt">LLM heuristics</td><td class="label-code">Sibling element heuristic in code</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── Results ── -->
+<section id="results">
+  <div class="container">
+    <span class="section-label fade-in">Validated</span>
+    <h2 class="fade-in">Proven on real macOS apps</h2>
+    <p class="section-desc fade-in">UIFlowCrawler has been validated on Apple Weather, Microsoft Edge, and more — automatically discovering states, mapping transitions, and generating BDD test suites.</p>
+    <div class="results-grid">
+      <div class="result-card fade-in">
+        <h3>Automatic</h3>
+        <div class="result-stat">&#9881;</div>
+        <p>Full state discovery with zero manual scripting</p>
+      </div>
+      <div class="result-card fade-in">
+        <h3>Complete</h3>
+        <div class="result-stat">&#10003;</div>
+        <p>Algorithm-guaranteed transition coverage</p>
+      </div>
+      <div class="result-card fade-in">
+        <h3>Actionable</h3>
+        <div class="result-stat">&#9997;</div>
+        <p>Production-ready BDD Gherkin test cases</p>
+      </div>
+      <div class="result-card fade-in">
+        <h3>Visual</h3>
+        <div class="result-stat">&#9635;</div>
+        <p>Interactive HTML report with state graph</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── Quick Start ── -->
+<section id="quickstart">
+  <div class="container">
+    <span class="section-label fade-in">Quick Start</span>
+    <h2 class="fade-in">Up and running in minutes</h2>
+    <p class="section-desc fade-in">Prerequisites: macOS, Node.js, Python, and Claude Code CLI.</p>
+    <div class="qs-steps">
+      <div class="qs-step fade-in">
+        <div class="qs-step-header">
+          <span class="qs-step-num">1</span>
+          <h3>Install dependencies</h3>
+        </div>
+        <div class="code-block"><span class="comment"># Install Appium and the macOS driver</span>
+<span class="cmd">npm install -g appium</span>
+<span class="cmd">appium driver install mac2</span>
+
+<span class="comment"># Install Python dependencies</span>
+<span class="cmd">pip install -r e2e-coverage/requirements.txt</span></div>
+      </div>
+      <div class="qs-step fade-in">
+        <div class="qs-step-header">
+          <span class="qs-step-num">2</span>
+          <h3>Configure your target app</h3>
+        </div>
+        <div class="code-block"><span class="comment"># Edit e2e-coverage/conf/appium_mac.json</span>
+<span class="comment"># Set the bundleId to your target macOS app</span>
+{
+  "bundleId": "<span class="cmd">com.apple.weather</span>"
+}</div>
+      </div>
+      <div class="qs-step fade-in">
+        <div class="qs-step-header">
+          <span class="qs-step-num">3</span>
+          <h3>Run exploration</h3>
+        </div>
+        <div class="code-block"><span class="comment"># In Claude Code, use the slash command:</span>
+<span class="cmd">/e2e-coverage</span>
+> Explore the Weather app (com.apple.weather)</div>
+      </div>
+      <div class="qs-step fade-in">
+        <div class="qs-step-header">
+          <span class="qs-step-num">4</span>
+          <h3>Generate BDD test cases</h3>
+        </div>
+        <div class="code-block"><span class="comment"># After exploration completes:</span>
+<span class="cmd">/bdd-gen</span>
+
+<span class="comment"># Output: e2e_output/features/*.feature + report.html</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Output ── -->
+<section id="output">
+  <div class="container">
+    <span class="section-label fade-in">Output</span>
+    <h2 class="fade-in">What you get</h2>
+    <p class="section-desc fade-in">Everything is saved to a single output directory with a rich interactive HTML report.</p>
+    <div class="code-block fade-in"><span class="cmd">e2e_output/</span>
+  ├── states/           <span class="comment"># Per-state screenshots + element data</span>
+  ├── utg.json          <span class="comment"># State transition graph</span>
+  ├── flows.json        <span class="comment"># LLM-designed test flows (grouped)</span>
+  ├── features/         <span class="comment"># BDD Gherkin .feature files</span>
+  └── report.html       <span class="comment"># Interactive HTML report</span></div>
+    <div class="mech-grid mt-48">
+      <div class="mech-item fade-in">
+        <h3><span class="dot" style="background:var(--accent)"></span>State Graph</h3>
+        <p>Interactive SVG with hover tooltips and flow highlighting. Click any flow to see its path through the graph.</p>
+      </div>
+      <div class="mech-item fade-in">
+        <h3><span class="dot" style="background:var(--accent2)"></span>Test Cases</h3>
+        <p>Collapsible groups with @happy, @error, @boundary badges. Expandable steps with full detail.</p>
+      </div>
+      <div class="mech-item fade-in">
+        <h3><span class="dot" style="background:var(--accent3)"></span>Coverage Summary</h3>
+        <p>State, transition, flow, and test case counts at a glance. Drill down into any area.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="#tldr">About</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="https://github.com">GitHub</a>
+    </div>
+    <p>UIFlowCrawler &mdash; MIT License</p>
+  </div>
+</footer>
+
+<script>
+// ── Theme Toggle ──
+(function() {
+  const toggle = document.getElementById('themeToggle');
+  const icon = document.getElementById('themeIcon');
+  const root = document.documentElement;
+
+  function setTheme(theme) {
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    icon.innerHTML = theme === 'dark' ? '&#9790;' : '&#9728;';
+  }
+
+  const saved = localStorage.getItem('theme');
+  if (saved) setTheme(saved);
+
+  toggle.addEventListener('click', function() {
+    const current = root.getAttribute('data-theme');
+    setTheme(current === 'dark' ? 'light' : 'dark');
+  });
+})();
+
+// ── Scroll-triggered Fade-in ──
+(function() {
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    document.querySelectorAll('.fade-in').forEach(function(el) {
+      el.classList.add('visible');
+    });
+    return;
+  }
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach(function(el) {
+    observer.observe(el);
+  });
+})();
+</script>
+
+</body>
+</html>
